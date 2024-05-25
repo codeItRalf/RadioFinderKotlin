@@ -1,5 +1,6 @@
 package com.example.radiofinder.data.repository
 
+import android.util.Log
 import com.example.radiofinder.data.model.RadioStation
 import com.example.radiofinder.services.RadioService
 import retrofit2.Retrofit
@@ -20,8 +21,9 @@ class RadioRepository private constructor() {
         radioService = retrofit.create(RadioService::class.java)
     }
 
-    suspend fun getStationsByTag(tag: String, limit: Int, offset: Int): List<RadioStation> {
+    suspend fun searchStationsByName(searchTerm: String, limit: Int, offset: Int): List<RadioStation> {
         val queryParams = mapOf(
+            "name" to searchTerm,
             "limit" to limit.toString(),
             "offset" to offset.toString(),
             "hidebroken" to "true"
@@ -29,9 +31,12 @@ class RadioRepository private constructor() {
 
         return try {
             val result = withContext(Dispatchers.IO) {
-                radioService.getStationsByTag(tag, queryParams)
+                radioService.searchByName(queryParams)
             }
-            result.map { RadioStation.fromJson(it) }
+            Log.d("RadioRepository", "Result: ${result.size}")
+            result.map {
+                RadioStation.fromJson(it) }
+
         } catch (e: Exception) {
             // Log the error
             e.printStackTrace()

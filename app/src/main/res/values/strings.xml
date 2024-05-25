@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">RadioFinder</string>
+    <string name="search">Search</string>
 </resources>
