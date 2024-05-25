@@ -9,6 +9,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import com.example.radiofinder.R
 import com.example.radiofinder.data.model.RadioStation
 import com.squareup.picasso.Picasso
@@ -46,10 +47,18 @@ class DetailsActivity : AppCompatActivity() {
             return
         }
 
-        exoPlayer = ExoPlayer.Builder(this).build()
-        val mediaItem = MediaItem.fromUri(station.resolvedUrl)
-        exoPlayer.setMediaItem(mediaItem)
-        exoPlayer.prepare()
+        try {
+            exoPlayer = ExoPlayer.Builder(this)
+                .setMediaSourceFactory(DefaultMediaSourceFactory(this))
+                .build()
+
+            val mediaItem = MediaItem.fromUri(station.resolvedUrl)
+            exoPlayer.setMediaItem(mediaItem)
+            exoPlayer.prepare()
+        } catch (e: Exception) {
+            showErrorAndClose("Failed to load media: ${e.message}")
+            return
+        }
 
         playButton.setOnClickListener {
             if (exoPlayer.isPlaying) {
