@@ -21,12 +21,14 @@ class PlayerService : Service() {
 
     private val binder = PlayerBinder()
     private lateinit var exoPlayer: ExoPlayer
+    private var stationName = ""
 
     override fun onCreate() {
         super.onCreate()
         exoPlayer = ExoPlayer.Builder(this)
             .setMediaSourceFactory(DefaultMediaSourceFactory(this))
             .build()
+        startForeground(NOTIFICATION_ID, createNotification("Radio Player", false))
     }
 
     override fun onBind(intent: Intent?): IBinder {
@@ -38,20 +40,24 @@ class PlayerService : Service() {
         exoPlayer.release()
     }
 
-    fun play(url: String) {
+    fun play(url: String, name: String) {
+        stationName = name
         val mediaItem = MediaItem.fromUri(url)
         exoPlayer.setMediaItem(mediaItem)
         exoPlayer.prepare()
         exoPlayer.play()
-        startForeground(NOTIFICATION_ID, createNotification("Playing Radio", true))
+
+        updateNotification("Playing", true)
     }
+
 
     fun pause() {
         exoPlayer.pause()
-        updateNotification("Radio Paused", false)
+        updateNotification("Paused", false)
     }
 
-    fun stopMedia() {
+
+    private fun stopMedia() {
         exoPlayer.stop()
         stopForeground(true)
         stopSelf()
@@ -72,21 +78,33 @@ class PlayerService : Service() {
 
     private fun createNotification(contentText: String, isPlaying: Boolean): Notification {
         val notificationIntent = Intent(this, MainActivity::class.java)
-        val pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT)
+        val pendingIntent = PendingIntent.getActivity(
+            this,
+            0,
+            notificationIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT
+        )
 
         val playPauseAction = if (isPlaying) {
             val pauseIntent = Intent(this, PlayerService::class.java).apply {
                 action = ACTION_PAUSE
             }
-            val pausePendingIntent = PendingIntent.getService(this, 0, pauseIntent, PendingIntent.FLAG_UPDATE_CURRENT)
-            NotificationCompat.Action(android.R.drawable.ic_media_pause, "Pause", pausePendingIntent)
+            val pausePendingIntent =
+                PendingIntent.getService(this, 0, pauseIntent, PendingIntent.FLAG_UPDATE_CURRENT)
+            NotificationCompat.Action(
+                android.R.drawable.ic_media_pause,
+                "Pause",
+                pausePendingIntent
+            )
         } else {
             val playIntent = Intent(this, PlayerService::class.java).apply {
                 action = ACTION_PLAY
             }
-            val playPendingIntent = PendingIntent.getService(this, 0, playIntent, PendingIntent.FLAG_UPDATE_CURRENT)
+            val playPendingIntent =
+                PendingIntent.getService(this, 0, playIntent, PendingIntent.FLAG_UPDATE_CURRENT)
             NotificationCompat.Action(android.R.drawable.ic_media_play, "Play", playPendingIntent)
         }
+
 
         val channelId = "radio_channel_id"
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -100,17 +118,19 @@ class PlayerService : Service() {
         }
 
         return NotificationCompat.Builder(this, channelId)
-            .setContentTitle("Radio Player")
+            .setContentTitle(stationName)
             .setContentText(contentText)
             .setSmallIcon(R.drawable.music_note_beamed)
             .setContentIntent(pendingIntent)
             .addAction(playPauseAction)
+            .setOngoing(isPlaying)
             .build()
     }
 
     private fun updateNotification(contentText: String, isPlaying: Boolean) {
         val notification = createNotification(contentText, isPlaying)
-        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val notificationManager =
+            getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.notify(NOTIFICATION_ID, notification)
     }
 
@@ -128,15 +148,17 @@ class PlayerService : Service() {
         when (action) {
             ACTION_PLAY -> {
                 if (mediaUrl != null) {
-                    play(mediaUrl)
+                    play(mediaUrl, stationName)
                 } else if (!exoPlayer.isPlaying) {
                     exoPlayer.play()
                     updateNotification("Playing Radio", true)
                 }
             }
+
             ACTION_PAUSE -> {
                 pause()
             }
+
             ACTION_STOP -> {
                 stopMedia()
             }

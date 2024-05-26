@@ -18,14 +18,13 @@ import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import com.example.radiofinder.R
 import com.example.radiofinder.data.model.RadioStation
 import com.example.radiofinder.services.PlayerService
+import com.example.radiofinder.services.ServiceConnectionManager
 import com.squareup.picasso.Picasso
 
 class DetailsActivity : AppCompatActivity() {
 
-    private var playerService: PlayerService? = null
-    private var isBound = false
+    private lateinit var serviceConnectionManager: ServiceConnectionManager
     private lateinit var playButton: Button
-    private lateinit var volumeControl: SeekBar
     private lateinit var stationImage: ImageView
     private lateinit var stationName: TextView
     private lateinit var stationDescription: TextView
@@ -35,24 +34,11 @@ class DetailsActivity : AppCompatActivity() {
     private lateinit var stationVotes: TextView
     private lateinit var station: RadioStation
 
-    private val connection = object : ServiceConnection {
-        override fun onServiceConnected(className: ComponentName, service: IBinder) {
-            val binder = service as PlayerService.PlayerBinder
-            playerService = binder.service
-            isBound = true
-            setupPlayerControls(station)
-        }
-
-        override fun onServiceDisconnected(arg0: ComponentName) {
-            isBound = false
-            playerService = null
-        }
-    }
-
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_details)
+
+        serviceConnectionManager = ServiceConnectionManager(this)
 
         station = intent.getParcelableExtra<RadioStation>("station") ?: run {
             showErrorAndClose("Station data is missing")
@@ -61,7 +47,20 @@ class DetailsActivity : AppCompatActivity() {
 
         initViews()
         bindDataToViews(station)
+    }
 
+    override fun onStart() {
+        super.onStart()
+        serviceConnectionManager.bindService { playerService ->
+            if (playerService != null) {
+                setupPlayerControls(station)
+            }
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        serviceConnectionManager.unbindService()
     }
 
     private fun initViews() {
@@ -73,7 +72,6 @@ class DetailsActivity : AppCompatActivity() {
         stationLanguage = findViewById(R.id.stationLanguage)
         stationVotes = findViewById(R.id.stationVotes)
         playButton = findViewById(R.id.playButton)
-        volumeControl = findViewById(R.id.volumeControl)
     }
 
     private fun bindDataToViews(station: RadioStation) {
@@ -89,42 +87,21 @@ class DetailsActivity : AppCompatActivity() {
     }
 
     private fun setupPlayerControls(station: RadioStation) {
-        if (!isBound) return
+
 
         playButton.setOnClickListener {
-            playerService?.let {
+            serviceConnectionManager.getService()?.let {
                 if (it.isPlaying()) {
                     it.pause()
                     playButton.text = "Play"
                 } else {
-                    it.play(station.resolvedUrl!!)
+                    it.play(station.resolvedUrl!!, station.name!!)
                     playButton.text = "Pause"
                 }
             }
         }
-
-        volumeControl.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                playerService?.setVolume(progress / 100f)
-            }
-
-            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
-        })
     }
 
-    override fun onStart() {
-        super.onStart()
-        Intent(this, PlayerService::class.java).also { intent ->
-            bindService(intent, connection, BIND_AUTO_CREATE)
-        }
-    }
-
-    override fun onStop() {
-        super.onStop()
-        unbindService(connection)
-        isBound = false
-    }
 
     private fun showErrorAndClose(message: String) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
