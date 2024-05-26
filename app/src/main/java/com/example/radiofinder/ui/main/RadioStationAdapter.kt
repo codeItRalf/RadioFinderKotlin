@@ -1,5 +1,6 @@
 package com.example.radiofinder.ui.main
 
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -10,18 +11,18 @@ import com.example.radiofinder.R
 import com.example.radiofinder.data.model.RadioStation
 import com.squareup.picasso.Picasso
 
-class RadioStationAdapter(private val clickListener: (RadioStation) -> Unit) :
+class RadioStationAdapter(private val clickListener: (RadioStation) -> Unit, private val onPlayClick: (RadioStation) -> Unit):
     RecyclerView.Adapter<RadioStationAdapter.ViewHolder>() {
 
     private var stations: List<RadioStation> = listOf()
 
-    class ViewHolder(view: View, private val clickListener: (RadioStation) -> Unit) :
+    inner  class ViewHolder(view: View, private val clickListener: (RadioStation) -> Unit) :
         RecyclerView.ViewHolder(view) {
         private val nameTextView: TextView = view.findViewById(R.id.station_name)
         private val descriptionTextView: TextView = view.findViewById(R.id.station_description)
         private val tagsTextView: TextView = view.findViewById(R.id.station_tags)
         private val stationImageView: ImageView = view.findViewById(R.id.station_image)
-
+        private val playButton: ImageView = view.findViewById(R.id.play_button)
         fun bind(station: RadioStation) {
             nameTextView.text = station.name
             descriptionTextView.text = station.country
@@ -29,7 +30,9 @@ class RadioStationAdapter(private val clickListener: (RadioStation) -> Unit) :
             if (!station.favicon.isNullOrBlank()) {
                 Picasso.get().load(station.favicon).into(stationImageView)
             }
-
+            playButton.setOnClickListener {
+                onPlayClick(station)
+            }
             itemView.setOnClickListener {
                 clickListener(station)
             }

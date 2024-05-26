@@ -1,55 +1,56 @@
 package com.example.radiofinder.ui.main
 
-import android.content.ComponentName
 import android.content.Intent
-import android.content.ServiceConnection
 import android.os.Bundle
 import android.os.Handler
-import android.os.IBinder
 import android.os.Looper
+import android.util.Log
 import android.view.Menu
 import android.view.View
+import android.widget.ImageView
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
+import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.radiofinder.R
+import com.example.radiofinder.data.model.RadioStation
 import com.example.radiofinder.services.PlayerService
+import com.example.radiofinder.services.ServiceConnectionManager
 import com.example.radiofinder.ui.details.DetailsActivity
 import com.example.radiofinder.viewmodel.RadioViewModel
 
 class MainActivity : AppCompatActivity() {
 
+    private lateinit var serviceConnectionManager: ServiceConnectionManager
+    private lateinit var floatingController: View
+    private lateinit var controllerStationName: TextView
+    private lateinit var controllerPlayPauseButton: ImageView
     private lateinit var viewModel: RadioViewModel
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: RadioStationAdapter
     private lateinit var loadingIndicator: View
-    private var playerService: PlayerService? = null
-    private var isBound = false
 
     private val handler = Handler(Looper.getMainLooper())
     private var searchRunnable: Runnable? = null
 
-
-    private val connection = object : ServiceConnection {
-        override fun onServiceConnected(className: ComponentName, service: IBinder) {
-            val binder = service as PlayerService.PlayerBinder
-            playerService = binder.service
-            isBound = true
-        }
-
-        override fun onServiceDisconnected(arg0: ComponentName) {
-            isBound = false
-            playerService = null
-        }
-    }
-
-
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        // Initialize the ServiceConnectionManager
+        serviceConnectionManager = ServiceConnectionManager(this)
+
+        floatingController = findViewById(R.id.floating_station_controller)
+        controllerStationName = floatingController.findViewById(R.id.controller_station_name)
+        controllerPlayPauseButton = floatingController.findViewById(R.id.controller_play_pause_button)
+
+        // Set play/pause button click listener
+        controllerPlayPauseButton.setOnClickListener {
+            togglePlayPause()
+        }
 
         setupToolbar()
         setupViewModel()
@@ -72,12 +73,14 @@ class MainActivity : AppCompatActivity() {
     private fun setupRecyclerView() {
         recyclerView = findViewById(R.id.recyclerView)
         recyclerView.layoutManager = LinearLayoutManager(this)
-        adapter = RadioStationAdapter { station ->
+        adapter = RadioStationAdapter({ station ->
             val intent = Intent(this, DetailsActivity::class.java).apply {
                 putExtra("station", station)
             }
             startActivity(intent)
-        }
+        }, { station ->
+            playRadio(station)
+        })
         recyclerView.adapter = adapter
     }
 
@@ -134,16 +137,43 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
+    private fun playRadio(station: RadioStation) {
+           val playerService =  serviceConnectionManager.getService()
+            playerService?.play(station)
+    }
+
+    private fun togglePlayPause() {
+        val playerService = serviceConnectionManager.getService() ?: return
+        if (playerService.isPlaying()) {
+            playerService.pause()
+            controllerPlayPauseButton.setImageResource(android.R.drawable.ic_media_play)
+        } else {
+            playerService.play(playerService.getStation()!!)
+            controllerPlayPauseButton.setImageResource(android.R.drawable.ic_media_pause)
+        }
+    }
+
     override fun onStart() {
         super.onStart()
-        Intent(this, PlayerService::class.java).also { intent ->
-            bindService(intent, connection, BIND_AUTO_CREATE)
+        serviceConnectionManager.bindService { playerService ->
+           observePlayerService(playerService)
         }
     }
 
     override fun onStop() {
         super.onStop()
-        unbindService(connection)
-        isBound = false
+        serviceConnectionManager.unbindService()
+    }
+
+    private fun observePlayerService(playerService: PlayerService?) {
+        playerService?.currentStation?.observe(this, Observer { station ->
+            if (station != null) {
+                controllerStationName.text = station.name
+                controllerPlayPauseButton.setImageResource(android.R.drawable.ic_media_pause)
+                floatingController.visibility = View.VISIBLE
+            } else {
+                floatingController.visibility = View.GONE
+            }
+        })
     }
 }

@@ -57,5 +57,12 @@
             android:text="Station Description"
             android:textAlignment="viewStart"
             android:textSize="14sp" />
+        <ImageView
+            android:id="@+id/play_button"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:src="@drawable/ic_play" />
     </RelativeLayout>
 </androidx.cardview.widget.CardView>

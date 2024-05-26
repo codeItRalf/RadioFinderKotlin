@@ -95,7 +95,7 @@ class DetailsActivity : AppCompatActivity() {
                     it.pause()
                     playButton.text = "Play"
                 } else {
-                    it.play(station.resolvedUrl!!, station.name!!)
+                    it.play(station)
                     playButton.text = "Pause"
                 }
             }

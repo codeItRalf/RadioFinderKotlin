@@ -10,18 +10,23 @@ import android.content.Intent
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
+import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import com.example.radiofinder.R
+import com.example.radiofinder.data.model.RadioStation
 import com.example.radiofinder.ui.main.MainActivity
 
 class PlayerService : Service() {
 
     private val binder = PlayerBinder()
     private lateinit var exoPlayer: ExoPlayer
-    private var stationName = ""
+    private val _currentStation = MutableLiveData<RadioStation?>()
+    val currentStation: LiveData<RadioStation?> get() = _currentStation
 
     override fun onCreate() {
         super.onCreate()
@@ -40,9 +45,9 @@ class PlayerService : Service() {
         exoPlayer.release()
     }
 
-    fun play(url: String, name: String) {
-        stationName = name
-        val mediaItem = MediaItem.fromUri(url)
+    fun play(station: RadioStation) {
+        _currentStation.value = station
+        val mediaItem = MediaItem.fromUri(station.resolvedUrl!!)
         exoPlayer.setMediaItem(mediaItem)
         exoPlayer.prepare()
         exoPlayer.play()
@@ -82,7 +87,7 @@ class PlayerService : Service() {
             this,
             0,
             notificationIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT
+            PendingIntent.FLAG_IMMUTABLE
         )
 
         val playPauseAction = if (isPlaying) {
@@ -90,7 +95,7 @@ class PlayerService : Service() {
                 action = ACTION_PAUSE
             }
             val pausePendingIntent =
-                PendingIntent.getService(this, 0, pauseIntent, PendingIntent.FLAG_UPDATE_CURRENT)
+                PendingIntent.getService(this, 0, pauseIntent, PendingIntent.FLAG_IMMUTABLE)
             NotificationCompat.Action(
                 android.R.drawable.ic_media_pause,
                 "Pause",
@@ -101,7 +106,7 @@ class PlayerService : Service() {
                 action = ACTION_PLAY
             }
             val playPendingIntent =
-                PendingIntent.getService(this, 0, playIntent, PendingIntent.FLAG_UPDATE_CURRENT)
+                PendingIntent.getService(this, 0, playIntent, PendingIntent.FLAG_IMMUTABLE)
             NotificationCompat.Action(android.R.drawable.ic_media_play, "Play", playPendingIntent)
         }
 
@@ -118,9 +123,9 @@ class PlayerService : Service() {
         }
 
         return NotificationCompat.Builder(this, channelId)
-            .setContentTitle(stationName)
+            .setContentTitle(currentStation.value?.name ?: "")
             .setContentText(contentText)
-            .setSmallIcon(R.drawable.music_note_beamed)
+            .setSmallIcon(R.drawable.ic_music_note)
             .setContentIntent(pendingIntent)
             .addAction(playPauseAction)
             .setOngoing(isPlaying)
@@ -148,7 +153,7 @@ class PlayerService : Service() {
         when (action) {
             ACTION_PLAY -> {
                 if (mediaUrl != null) {
-                    play(mediaUrl, stationName)
+                    play(_currentStation.value!!)
                 } else if (!exoPlayer.isPlaying) {
                     exoPlayer.play()
                     updateNotification("Playing Radio", true)
@@ -165,5 +170,10 @@ class PlayerService : Service() {
         }
 
         return START_STICKY
+    }
+
+
+    fun getStation(): RadioStation? {
+        return _currentStation.value
     }
 }
