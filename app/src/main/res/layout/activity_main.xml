@@ -17,8 +17,7 @@
         android:id="@+id/recyclerView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@id/toolbar"
-        android:paddingHorizontal="16dp"/>
+        android:layout_below="@id/toolbar" />
 
     <ProgressBar
         android:id="@+id/loadingIndicator"
