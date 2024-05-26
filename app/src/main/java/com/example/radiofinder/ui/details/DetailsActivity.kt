@@ -1,6 +1,11 @@
 package com.example.radiofinder.ui.details
 
+import android.content.ComponentName
+import android.content.Intent
+import android.content.ServiceConnection
 import android.os.Bundle
+import android.os.IBinder
+import android.util.Log
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.SeekBar
@@ -12,11 +17,13 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import com.example.radiofinder.R
 import com.example.radiofinder.data.model.RadioStation
+import com.example.radiofinder.services.PlayerService
 import com.squareup.picasso.Picasso
 
 class DetailsActivity : AppCompatActivity() {
 
-    private lateinit var exoPlayer: ExoPlayer
+    private var playerService: PlayerService? = null
+    private var isBound = false
     private lateinit var playButton: Button
     private lateinit var volumeControl: SeekBar
     private lateinit var stationImage: ImageView
@@ -26,19 +33,35 @@ class DetailsActivity : AppCompatActivity() {
     private lateinit var stationBitrate: TextView
     private lateinit var stationLanguage: TextView
     private lateinit var stationVotes: TextView
+    private lateinit var station: RadioStation
+
+    private val connection = object : ServiceConnection {
+        override fun onServiceConnected(className: ComponentName, service: IBinder) {
+            val binder = service as PlayerService.PlayerBinder
+            playerService = binder.service
+            isBound = true
+            setupPlayerControls(station)
+        }
+
+        override fun onServiceDisconnected(arg0: ComponentName) {
+            isBound = false
+            playerService = null
+        }
+    }
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_details)
 
-        val station = intent.getParcelableExtra<RadioStation>("station") ?: run {
+        station = intent.getParcelableExtra<RadioStation>("station") ?: run {
             showErrorAndClose("Station data is missing")
             return
         }
 
         initViews()
         bindDataToViews(station)
-        setupExoPlayer(station)
+
     }
 
     private fun initViews() {
@@ -65,38 +88,24 @@ class DetailsActivity : AppCompatActivity() {
         }
     }
 
-    private fun setupExoPlayer(station: RadioStation) {
-        if (station.resolvedUrl.isNullOrBlank()) {
-            showErrorAndClose("Resolved URL is empty or invalid")
-            return
-        }
-
-        try {
-            exoPlayer = ExoPlayer.Builder(this)
-                .setMediaSourceFactory(DefaultMediaSourceFactory(this))
-                .build()
-
-            val mediaItem = MediaItem.fromUri(station.resolvedUrl)
-            exoPlayer.setMediaItem(mediaItem)
-            exoPlayer.prepare()
-        } catch (e: Exception) {
-            showErrorAndClose("Failed to load media: ${e.message}")
-            return
-        }
+    private fun setupPlayerControls(station: RadioStation) {
+        if (!isBound) return
 
         playButton.setOnClickListener {
-            if (exoPlayer.isPlaying) {
-                exoPlayer.pause()
-                playButton.text = "Play"
-            } else {
-                exoPlayer.play()
-                playButton.text = "Pause"
+            playerService?.let {
+                if (it.isPlaying()) {
+                    it.pause()
+                    playButton.text = "Play"
+                } else {
+                    it.play(station.resolvedUrl!!)
+                    playButton.text = "Pause"
+                }
             }
         }
 
         volumeControl.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                exoPlayer.volume = progress / 100f
+                playerService?.setVolume(progress / 100f)
             }
 
             override fun onStartTrackingTouch(seekBar: SeekBar?) {}
@@ -104,9 +113,17 @@ class DetailsActivity : AppCompatActivity() {
         })
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        exoPlayer.release()
+    override fun onStart() {
+        super.onStart()
+        Intent(this, PlayerService::class.java).also { intent ->
+            bindService(intent, connection, BIND_AUTO_CREATE)
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        unbindService(connection)
+        isBound = false
     }
 
     private fun showErrorAndClose(message: String) {

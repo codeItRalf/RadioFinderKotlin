@@ -1,8 +1,11 @@
 package com.example.radiofinder.ui.main
 
+import android.content.ComponentName
 import android.content.Intent
+import android.content.ServiceConnection
 import android.os.Bundle
 import android.os.Handler
+import android.os.IBinder
 import android.os.Looper
 import android.view.Menu
 import android.view.View
@@ -12,6 +15,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.radiofinder.R
+import com.example.radiofinder.services.PlayerService
 import com.example.radiofinder.ui.details.DetailsActivity
 import com.example.radiofinder.viewmodel.RadioViewModel
 
@@ -21,9 +25,27 @@ class MainActivity : AppCompatActivity() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: RadioStationAdapter
     private lateinit var loadingIndicator: View
+    private var playerService: PlayerService? = null
+    private var isBound = false
 
     private val handler = Handler(Looper.getMainLooper())
     private var searchRunnable: Runnable? = null
+
+
+    private val connection = object : ServiceConnection {
+        override fun onServiceConnected(className: ComponentName, service: IBinder) {
+            val binder = service as PlayerService.PlayerBinder
+            playerService = binder.service
+            isBound = true
+        }
+
+        override fun onServiceDisconnected(arg0: ComponentName) {
+            isBound = false
+            playerService = null
+        }
+    }
+
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -110,5 +132,18 @@ class MainActivity : AppCompatActivity() {
                 return true
             }
         })
+    }
+
+    override fun onStart() {
+        super.onStart()
+        Intent(this, PlayerService::class.java).also { intent ->
+            bindService(intent, connection, BIND_AUTO_CREATE)
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        unbindService(connection)
+        isBound = false
     }
 }
