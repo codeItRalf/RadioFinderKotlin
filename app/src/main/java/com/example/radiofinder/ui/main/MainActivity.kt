@@ -4,7 +4,6 @@ import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import android.view.Menu
 import android.view.View
 import android.widget.ImageView
@@ -12,6 +11,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -36,7 +36,6 @@ class MainActivity : AppCompatActivity() {
 
     private val handler = Handler(Looper.getMainLooper())
     private var searchRunnable: Runnable? = null
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -56,8 +55,8 @@ class MainActivity : AppCompatActivity() {
 
         setupToolbar()
         setupViewModel()
-        setupRecyclerView()
         setupObservers()
+        setupRecyclerView()
         setupScrollListener()
 
         viewModel.searchStations("") // Initial search example
@@ -75,14 +74,17 @@ class MainActivity : AppCompatActivity() {
     private fun setupRecyclerView() {
         recyclerView = findViewById(R.id.recyclerView)
         recyclerView.layoutManager = LinearLayoutManager(this)
-        adapter = RadioStationAdapter({ station ->
-            val intent = Intent(this, DetailsActivity::class.java).apply {
-                putExtra("station", station)
-            }
-            startActivity(intent)
-        }, { station ->
-            playRadio(station)
-        })
+        adapter = RadioStationAdapter(
+            { station ->
+                val intent = Intent(this, DetailsActivity::class.java).apply {
+                    putExtra("station", station)
+                }
+                startActivity(intent)
+            },
+            { station ->
+                playRadio(station)
+            },
+        )
         recyclerView.adapter = adapter
     }
 
@@ -99,7 +101,32 @@ class MainActivity : AppCompatActivity() {
         viewModel.isLoading.observe(this) { isLoading ->
             loadingIndicator.visibility = if (isLoading) View.VISIBLE else View.GONE
         }
+
+        serviceConnectionManager.bindService { playerService ->
+            playerService?.currentStation?.observe(this, Observer { station ->
+                updateControllerUI(station, playerService.isPlaying())
+                adapter.setCurrentStation(station)
+            })
+
+            playerService?.isPlaying?.observe(this, Observer { playing ->
+                updateControllerUI(playerService.getStation(), playing)
+                adapter.setIsPlaying(playing)
+            })
+        }
     }
+
+    private fun updateControllerUI(currentStation: RadioStation?, isPlaying: Boolean) {
+        if (currentStation != null) {
+            controllerStationName.text = currentStation?.name
+            controllerPlayPauseButton.setImageResource(
+                if (isPlaying) android.R.drawable.ic_media_pause else android.R.drawable.ic_media_play
+            )
+            floatingController.visibility = View.VISIBLE
+        } else {
+            floatingController.visibility = View.GONE
+        }
+    }
+
 
     private fun setupScrollListener() {
         recyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
@@ -172,14 +199,28 @@ class MainActivity : AppCompatActivity() {
         serviceConnectionManager.unbindService()
     }
 
+
     private fun observePlayerService(playerService: PlayerService?) {
         playerService?.currentStation?.observe(this, Observer { station ->
             if (station != null) {
                 controllerStationName.text = station.name
-                controllerPlayPauseButton.setImageResource(android.R.drawable.ic_media_pause)
                 floatingController.visibility = View.VISIBLE
+                val isPlaying = playerService.isPlaying()
+                if (isPlaying) {
+                    controllerPlayPauseButton.setImageResource(android.R.drawable.ic_media_pause)
+                } else {
+                    controllerPlayPauseButton.setImageResource(android.R.drawable.ic_media_play)
+                }
             } else {
                 floatingController.visibility = View.GONE
+            }
+        })
+
+        playerService?.isPlaying?.observe(this, Observer { isPlaying ->
+            if (isPlaying) {
+                controllerPlayPauseButton.setImageResource(android.R.drawable.ic_media_pause)
+            } else {
+                controllerPlayPauseButton.setImageResource(android.R.drawable.ic_media_play)
             }
         })
     }

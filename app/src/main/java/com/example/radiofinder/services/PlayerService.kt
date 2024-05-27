@@ -15,6 +15,7 @@ import androidx.core.app.NotificationCompat
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import com.example.radiofinder.R
@@ -28,11 +29,19 @@ class PlayerService : Service() {
     private val _currentStation = MutableLiveData<RadioStation?>()
     val currentStation: LiveData<RadioStation?> get() = _currentStation
 
+    private  val _isPlaying = MutableLiveData<Boolean>()
+    val isPlaying: LiveData<Boolean> get() = _isPlaying
+
     override fun onCreate() {
         super.onCreate()
         exoPlayer = ExoPlayer.Builder(this)
             .setMediaSourceFactory(DefaultMediaSourceFactory(this))
             .build()
+        exoPlayer.addListener(object : Player.Listener {
+            override fun onIsPlayingChanged(isPlaying: Boolean) {
+                _isPlaying.postValue(isPlaying)
+            }
+        })
         startForeground(NOTIFICATION_ID, createNotification("Radio Player", false))
     }
 
@@ -52,7 +61,6 @@ class PlayerService : Service() {
         exoPlayer.setMediaItem(mediaItem)
         exoPlayer.prepare()
         exoPlayer.play()
-
         updateNotification("Playing", true)
     }
 
