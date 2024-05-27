@@ -2,6 +2,7 @@ package com.example.radiofinder.data.repository
 
 import android.util.Log
 import com.example.radiofinder.data.model.RadioStation
+import com.example.radiofinder.data.model.StationCheck
 import com.example.radiofinder.services.RadioService
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -36,6 +37,38 @@ class RadioRepository private constructor() {
             Log.d("RadioRepository", "Result: ${result.size}")
             result.map {
                 RadioStation.fromJson(it) }
+
+        } catch (e: Exception) {
+            // Log the error
+            e.printStackTrace()
+            throw e
+        }
+    }
+
+
+    suspend fun clickCounter(stationUuid: String): Map<String, Any> {
+        val queryParams = mapOf("stationUuid" to stationUuid)
+        return try {
+            withContext(Dispatchers.IO) {
+                radioService.clickCounter(queryParams)
+            }
+        } catch (e: Exception) {
+            // Log the error
+            e.printStackTrace()
+            throw e
+        }
+    }
+
+    suspend fun getStationCheck(stationUuid: String): List<StationCheck> {
+        val queryParams = mapOf("stationUuid" to stationUuid)
+        return try {
+          val result =   withContext(Dispatchers.IO) {
+                radioService.getStationCheck(queryParams)
+            }
+
+            result.map {
+                StationCheck.fromJson(it)
+            }
 
         } catch (e: Exception) {
             // Log the error

@@ -48,6 +48,7 @@ class PlayerService : Service() {
     fun play(station: RadioStation) {
         _currentStation.value = station
         val mediaItem = MediaItem.fromUri(station.resolvedUrl!!)
+
         exoPlayer.setMediaItem(mediaItem)
         exoPlayer.prepare()
         exoPlayer.play()

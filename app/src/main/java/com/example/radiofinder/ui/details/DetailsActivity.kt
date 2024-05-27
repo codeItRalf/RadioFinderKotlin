@@ -1,23 +1,18 @@
 package com.example.radiofinder.ui.details
 
-import android.content.ComponentName
-import android.content.Intent
-import android.content.ServiceConnection
 import android.os.Bundle
-import android.os.IBinder
-import android.util.Log
+import android.view.View
 import android.widget.Button
 import android.widget.ImageView
-import android.widget.SeekBar
+import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.media3.common.MediaItem
-import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProvider
 import com.example.radiofinder.R
 import com.example.radiofinder.data.model.RadioStation
-import com.example.radiofinder.services.PlayerService
+import com.example.radiofinder.data.model.StationCheck
 import com.example.radiofinder.services.ServiceConnectionManager
 import com.squareup.picasso.Picasso
 
@@ -32,7 +27,9 @@ class DetailsActivity : AppCompatActivity() {
     private lateinit var stationBitrate: TextView
     private lateinit var stationLanguage: TextView
     private lateinit var stationVotes: TextView
+    private lateinit var loadingIndicator: ProgressBar
     private lateinit var station: RadioStation
+    private lateinit var viewModel: DetailsViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,6 +44,32 @@ class DetailsActivity : AppCompatActivity() {
 
         initViews()
         bindDataToViews(station)
+        setupViewModel()
+        setupObservers()
+    }
+
+    private fun setupViewModel() {
+        viewModel = ViewModelProvider(this)[DetailsViewModel::class.java]
+        viewModel.getStationCheck(station.stationUuid)
+    }
+
+    private fun setupObservers() {
+        viewModel.stationChecks.observe(this, Observer { stationChecks ->
+            if (stationChecks.isNotEmpty()) {
+                val stationCheck = stationChecks[0]
+                bindStationCheckToViews(stationCheck)
+            }
+        })
+        viewModel.isLoading.observe(this, Observer { isLoading ->
+            loadingIndicator.visibility = if (isLoading) View.VISIBLE else View.GONE
+        })
+    }
+
+    private fun bindStationCheckToViews(stationCheck: StationCheck) {
+        stationTags.text = "Tags: ${stationCheck.tags ?: "N/A"}"
+        stationBitrate.text = "Bitrate: ${stationCheck.bitrate} kbps"
+        stationLanguage.text = "Language: ${stationCheck.languageCodes ?: "N/A"}"
+        // Update this to bind other relevant stationCheck fields to views
     }
 
     override fun onStart() {
@@ -72,6 +95,7 @@ class DetailsActivity : AppCompatActivity() {
         stationLanguage = findViewById(R.id.stationLanguage)
         stationVotes = findViewById(R.id.stationVotes)
         playButton = findViewById(R.id.playButton)
+        loadingIndicator = findViewById(R.id.loadingIndicator)
     }
 
     private fun bindDataToViews(station: RadioStation) {
@@ -87,8 +111,6 @@ class DetailsActivity : AppCompatActivity() {
     }
 
     private fun setupPlayerControls(station: RadioStation) {
-
-
         playButton.setOnClickListener {
             serviceConnectionManager.getService()?.let {
                 if (it.isPlaying()) {
@@ -101,7 +123,6 @@ class DetailsActivity : AppCompatActivity() {
             }
         }
     }
-
 
     private fun showErrorAndClose(message: String) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()

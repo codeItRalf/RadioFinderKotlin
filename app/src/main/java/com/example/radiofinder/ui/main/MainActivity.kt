@@ -9,6 +9,7 @@ import android.view.Menu
 import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
 import androidx.lifecycle.Observer
@@ -45,7 +46,8 @@ class MainActivity : AppCompatActivity() {
 
         floatingController = findViewById(R.id.floating_station_controller)
         controllerStationName = floatingController.findViewById(R.id.controller_station_name)
-        controllerPlayPauseButton = floatingController.findViewById(R.id.controller_play_pause_button)
+        controllerPlayPauseButton =
+            floatingController.findViewById(R.id.controller_play_pause_button)
 
         // Set play/pause button click listener
         controllerPlayPauseButton.setOnClickListener {
@@ -138,8 +140,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun playRadio(station: RadioStation) {
-           val playerService =  serviceConnectionManager.getService()
+        val playerService = serviceConnectionManager.getService()
+        try {
             playerService?.play(station)
+
+        } catch (e: Exception) {
+            Toast.makeText(this, e.message, Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun togglePlayPause() {
@@ -148,7 +155,7 @@ class MainActivity : AppCompatActivity() {
             playerService.pause()
             controllerPlayPauseButton.setImageResource(android.R.drawable.ic_media_play)
         } else {
-            playerService.play(playerService.getStation()!!)
+            playRadio(playerService.getStation()!!)
             controllerPlayPauseButton.setImageResource(android.R.drawable.ic_media_pause)
         }
     }
@@ -156,7 +163,7 @@ class MainActivity : AppCompatActivity() {
     override fun onStart() {
         super.onStart()
         serviceConnectionManager.bindService { playerService ->
-           observePlayerService(playerService)
+            observePlayerService(playerService)
         }
     }
 
