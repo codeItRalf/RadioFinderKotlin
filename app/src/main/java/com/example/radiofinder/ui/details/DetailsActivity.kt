@@ -3,6 +3,7 @@ package com.example.radiofinder.ui.details
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
+import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
@@ -19,7 +20,7 @@ import com.squareup.picasso.Picasso
 class DetailsActivity : AppCompatActivity() {
 
     private lateinit var serviceConnectionManager: ServiceConnectionManager
-    private lateinit var playButton: Button
+    private lateinit var playButton: ImageButton
     private lateinit var stationImage: ImageView
     private lateinit var stationName: TextView
     private lateinit var stationDescription: TextView
@@ -30,7 +31,7 @@ class DetailsActivity : AppCompatActivity() {
     private lateinit var loadingIndicator: ProgressBar
     private lateinit var station: RadioStation
     private lateinit var viewModel: DetailsViewModel
-
+    private  lateinit var playButtonLoadingIndicator: ProgressBar
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_details)
@@ -78,6 +79,23 @@ class DetailsActivity : AppCompatActivity() {
             if (playerService != null) {
                 setupPlayerControls(station)
             }
+            playerService?.isPlaying?.observe(this, Observer { playing ->
+                if (playing) {
+                    playButton.setImageResource(android.R.drawable.ic_media_pause)
+                } else {
+                    playButton.setImageResource(android.R.drawable.ic_media_play)
+                }
+            })
+
+            playerService?.isLoading?.observe(this, Observer { loading ->
+                if (loading) {
+                    playButton.visibility = View.GONE
+                    playButtonLoadingIndicator.visibility = View.VISIBLE
+                } else {
+                    playButton.visibility = View.VISIBLE
+                    playButtonLoadingIndicator.visibility = View.GONE
+                }
+            })
         }
     }
 
@@ -96,6 +114,7 @@ class DetailsActivity : AppCompatActivity() {
         stationVotes = findViewById(R.id.stationVotes)
         playButton = findViewById(R.id.playButton)
         loadingIndicator = findViewById(R.id.loadingIndicator)
+        playButtonLoadingIndicator = findViewById(R.id.playButtonLoadingIndicator)
     }
 
     private fun bindDataToViews(station: RadioStation) {
@@ -113,14 +132,9 @@ class DetailsActivity : AppCompatActivity() {
     private fun setupPlayerControls(station: RadioStation) {
         playButton.setOnClickListener {
             serviceConnectionManager.getService()?.let {
-                if (it.isPlaying()) {
-                    it.pause()
-                    playButton.text = "Play"
-                } else {
-                    it.play(station)
-                    playButton.text = "Pause"
-                }
+                it.playPause(station)
             }
+
         }
     }
 

@@ -7,18 +7,16 @@ import android.os.Looper
 import android.view.Menu
 import android.view.View
 import android.widget.ImageView
+import android.widget.ProgressBar
 import android.widget.TextView
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.radiofinder.R
 import com.example.radiofinder.data.model.RadioStation
-import com.example.radiofinder.services.PlayerService
 import com.example.radiofinder.services.ServiceConnectionManager
 import com.example.radiofinder.ui.details.DetailsActivity
 import com.example.radiofinder.viewmodel.RadioViewModel
@@ -33,7 +31,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: RadioStationAdapter
     private lateinit var loadingIndicator: View
-
+    private lateinit var controllerLoadingIndicator: ProgressBar
     private val handler = Handler(Looper.getMainLooper())
     private var searchRunnable: Runnable? = null
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -47,10 +45,11 @@ class MainActivity : AppCompatActivity() {
         controllerStationName = floatingController.findViewById(R.id.controller_station_name)
         controllerPlayPauseButton =
             floatingController.findViewById(R.id.controller_play_pause_button)
-
+        controllerLoadingIndicator =
+            floatingController.findViewById(R.id.controller_loading_indicator)
         // Set play/pause button click listener
         controllerPlayPauseButton.setOnClickListener {
-            togglePlayPause()
+            playPause(null)
         }
 
         setupToolbar()
@@ -82,7 +81,7 @@ class MainActivity : AppCompatActivity() {
                 startActivity(intent)
             },
             { station ->
-                playRadio(station)
+                playPause(station)
             },
         )
         recyclerView.adapter = adapter
@@ -111,13 +110,29 @@ class MainActivity : AppCompatActivity() {
             playerService?.isPlaying?.observe(this, Observer { playing ->
                 updateControllerUI(playerService.getStation(), playing)
                 adapter.setIsPlaying(playing)
+                if (playing) {
+                    controllerPlayPauseButton.setImageResource(android.R.drawable.ic_media_pause)
+                } else {
+                    controllerPlayPauseButton.setImageResource(android.R.drawable.ic_media_play)
+                }
+            })
+
+            playerService?.isLoading?.observe(this, Observer { loading ->
+                adapter.setIsLoading(loading)
+                if (loading) {
+                    controllerPlayPauseButton.visibility = View.GONE
+                    controllerLoadingIndicator.visibility = View.VISIBLE
+                } else {
+                    controllerPlayPauseButton.visibility = View.VISIBLE
+                    controllerLoadingIndicator.visibility = View.GONE
+                }
             })
         }
     }
 
     private fun updateControllerUI(currentStation: RadioStation?, isPlaying: Boolean) {
         if (currentStation != null) {
-            controllerStationName.text = currentStation?.name
+            controllerStationName.text = currentStation.name
             controllerPlayPauseButton.setImageResource(
                 if (isPlaying) android.R.drawable.ic_media_pause else android.R.drawable.ic_media_play
             )
@@ -166,33 +181,11 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
-    private fun playRadio(station: RadioStation) {
+    private fun playPause(station: RadioStation?) {
         val playerService = serviceConnectionManager.getService()
-        try {
-            playerService?.play(station)
-
-        } catch (e: Exception) {
-            Toast.makeText(this, e.message, Toast.LENGTH_SHORT).show()
-        }
+        playerService?.playPause(station)
     }
 
-    private fun togglePlayPause() {
-        val playerService = serviceConnectionManager.getService() ?: return
-        if (playerService.isPlaying()) {
-            playerService.pause()
-            controllerPlayPauseButton.setImageResource(android.R.drawable.ic_media_play)
-        } else {
-            playRadio(playerService.getStation()!!)
-            controllerPlayPauseButton.setImageResource(android.R.drawable.ic_media_pause)
-        }
-    }
-
-    override fun onStart() {
-        super.onStart()
-        serviceConnectionManager.bindService { playerService ->
-            observePlayerService(playerService)
-        }
-    }
 
     override fun onStop() {
         super.onStop()
@@ -200,28 +193,4 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    private fun observePlayerService(playerService: PlayerService?) {
-        playerService?.currentStation?.observe(this, Observer { station ->
-            if (station != null) {
-                controllerStationName.text = station.name
-                floatingController.visibility = View.VISIBLE
-                val isPlaying = playerService.isPlaying()
-                if (isPlaying) {
-                    controllerPlayPauseButton.setImageResource(android.R.drawable.ic_media_pause)
-                } else {
-                    controllerPlayPauseButton.setImageResource(android.R.drawable.ic_media_play)
-                }
-            } else {
-                floatingController.visibility = View.GONE
-            }
-        })
-
-        playerService?.isPlaying?.observe(this, Observer { isPlaying ->
-            if (isPlaying) {
-                controllerPlayPauseButton.setImageResource(android.R.drawable.ic_media_pause)
-            } else {
-                controllerPlayPauseButton.setImageResource(android.R.drawable.ic_media_play)
-            }
-        })
-    }
 }

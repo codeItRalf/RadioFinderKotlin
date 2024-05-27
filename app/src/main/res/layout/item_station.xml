@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
@@ -24,16 +23,40 @@
             android:scaleType="centerCrop"
             android:src="@drawable/ic_launcher_background" />
 
+
+        <ImageButton
+            android:id="@+id/play_button"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:layout_marginEnd="0dp"
+            android:contentDescription="@string/is_a_button"
+            style="@style/CircularImageButton" />
+
+        <ProgressBar
+            android:id="@+id/playButtonLoadingIndicator"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:layout_marginEnd="0dp"
+            android:indeterminate="true"
+            android:visibility="gone" />
+
         <TextView
             android:id="@+id/station_name"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentTop="true"
             android:layout_toEndOf="@id/station_image"
+            android:layout_toStartOf="@id/play_button"
             android:text="Station Name"
             android:textAlignment="viewStart"
             android:textSize="16sp"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            android:ellipsize="end"
+            android:singleLine="true" />
 
         <TextView
             android:id="@+id/station_tags"
@@ -41,11 +64,13 @@
             android:layout_height="wrap_content"
             android:layout_below="@id/station_name"
             android:layout_toEndOf="@id/station_image"
+            android:layout_toStartOf="@id/play_button"
             android:maxLines="1"
             android:text="Station tags"
             android:textSize="14sp"
             android:textStyle="italic"
             android:visibility="visible"
+            android:ellipsize="end"
             tools:visibility="visible" />
 
         <TextView
@@ -54,15 +79,11 @@
             android:layout_height="wrap_content"
             android:layout_below="@id/station_tags"
             android:layout_toEndOf="@id/station_image"
+            android:layout_toStartOf="@id/play_button"
             android:text="Station Description"
             android:textAlignment="viewStart"
-            android:textSize="14sp" />
-        <ImageView
-            android:id="@+id/play_button"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:layout_alignParentEnd="true"
-            android:layout_centerVertical="true"
-            android:src="@drawable/ic_play" />
+            android:textSize="14sp"
+            android:ellipsize="end"
+            android:singleLine="true" />
     </RelativeLayout>
 </androidx.cardview.widget.CardView>

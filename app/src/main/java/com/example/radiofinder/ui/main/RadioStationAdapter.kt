@@ -1,9 +1,11 @@
 package com.example.radiofinder.ui.main
 
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LiveData
@@ -22,6 +24,8 @@ class RadioStationAdapter(
     private var stations: List<RadioStation> = listOf()
     private var currentStation: RadioStation? = null
     private var isPlaying: Boolean = false
+    private var currentStationPosition: Int? = null
+    private  var isLoading: Boolean = false
 
 
 
@@ -32,6 +36,9 @@ class RadioStationAdapter(
         private val tagsTextView: TextView = view.findViewById(R.id.station_tags)
         private val stationImageView: ImageView = view.findViewById(R.id.station_image)
         private val playButton: ImageView = view.findViewById(R.id.play_button)
+
+        private val playButtonLoadingIndicator: ProgressBar = view.findViewById(R.id.playButtonLoadingIndicator)
+
         fun bind(station: RadioStation) {
             nameTextView.text = station.name
             descriptionTextView.text = station.country
@@ -39,6 +46,16 @@ class RadioStationAdapter(
             if (!station.favicon.isNullOrBlank()) {
                 Picasso.get().load(station.favicon).into(stationImageView)
             }
+
+
+            if (station.stationUuid == currentStation?.stationUuid && isLoading) {
+                playButton.visibility = View.GONE
+                playButtonLoadingIndicator.visibility = View.VISIBLE
+            } else {
+                playButton.visibility = View.VISIBLE
+                playButtonLoadingIndicator.visibility = View.GONE
+            }
+
             if (station.stationUuid == currentStation?.stationUuid && isPlaying) {
                 playButton.setImageResource(android.R.drawable.ic_media_pause)
             } else {
@@ -65,18 +82,34 @@ class RadioStationAdapter(
     override fun getItemCount(): Int = stations.size
 
     fun submitList(newStations: List<RadioStation>) {
+        val oldSize = stations.size
         stations =
             newStations.filter { !it.name.isNullOrBlank() && !it.resolvedUrl.isNullOrBlank() }
-        notifyDataSetChanged()
+        val newSize = stations.size
+        notifyItemRangeChanged(oldSize, newSize)
     }
 
     fun setCurrentStation(station: RadioStation?) {
+        val oldPosition = getCurrentPosition()
         currentStation = station
-        notifyDataSetChanged()
+        currentStationPosition = stations.indexOf(station)
+
+        notifyItemChanged(oldPosition)
+        currentStationPosition?.let { notifyItemChanged(it) }
     }
+
 
     fun setIsPlaying(playing: Boolean) {
         isPlaying = playing
-        notifyDataSetChanged()
+        notifyItemChanged(getCurrentPosition())
+    }
+
+    fun setIsLoading(loading: Boolean) {
+        isLoading = loading
+        notifyItemChanged(getCurrentPosition())
+    }
+
+    private fun getCurrentPosition(): Int {
+        return stations.indexOf(currentStation)
     }
 }

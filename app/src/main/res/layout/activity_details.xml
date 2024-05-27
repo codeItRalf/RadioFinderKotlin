@@ -92,12 +92,25 @@
         android:layout_marginTop="4dp"
         android:text="Votes: 1234" />
 
-    <Button
+
+    <ImageButton
         android:id="@+id/playButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
         android:layout_marginTop="16dp"
-        android:text="Play"
+        android:src="@android:drawable/ic_media_play"
+        style="@style/CircularImageButton"
+        app:layout_constraintTop_toBottomOf="@id/stationVotes"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <ProgressBar
+        android:id="@+id/playButtonLoadingIndicator"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:layout_marginTop="16dp"
+        android:indeterminate="true"
+        android:visibility="gone"
         app:layout_constraintTop_toBottomOf="@id/stationVotes"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
