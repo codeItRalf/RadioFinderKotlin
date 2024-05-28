@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.view.Menu
 import android.view.View
 import android.widget.ImageView
@@ -17,9 +18,13 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.radiofinder.R
 import com.example.radiofinder.data.model.RadioStation
+import com.example.radiofinder.data.repository.RadioRepository
 import com.example.radiofinder.services.ServiceConnectionManager
 import com.example.radiofinder.ui.details.DetailsActivity
 import com.example.radiofinder.viewmodel.RadioViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
@@ -103,6 +108,18 @@ class MainActivity : AppCompatActivity() {
 
         serviceConnectionManager.bindService { playerService ->
             playerService?.currentStation?.observe(this, Observer { station ->
+
+                CoroutineScope(Dispatchers.IO).launch {
+                    try {
+                        if (station != null) {
+                            val result =
+                                RadioRepository.getInstance().clickCounter(station.stationUuid)
+                        }
+                    } catch (e: Exception) {
+                        // Log the error if needed
+                    }
+                }
+
                 updateControllerUI(station, playerService.isPlaying())
                 adapter.setCurrentStation(station)
             })

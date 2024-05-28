@@ -31,7 +31,7 @@ class DetailsActivity : AppCompatActivity() {
     private lateinit var loadingIndicator: ProgressBar
     private lateinit var station: RadioStation
     private lateinit var viewModel: DetailsViewModel
-    private  lateinit var playButtonLoadingIndicator: ProgressBar
+    private lateinit var playButtonLoadingIndicator: ProgressBar
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_details)
@@ -80,7 +80,7 @@ class DetailsActivity : AppCompatActivity() {
                 setupPlayerControls(station)
             }
             playerService?.isPlaying?.observe(this, Observer { playing ->
-                if (playing) {
+                if (playing && playerService.getStation() == station) {
                     playButton.setImageResource(android.R.drawable.ic_media_pause)
                 } else {
                     playButton.setImageResource(android.R.drawable.ic_media_play)

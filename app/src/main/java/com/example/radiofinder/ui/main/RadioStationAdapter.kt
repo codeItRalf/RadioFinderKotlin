@@ -82,11 +82,9 @@ class RadioStationAdapter(
     override fun getItemCount(): Int = stations.size
 
     fun submitList(newStations: List<RadioStation>) {
-        val oldSize = stations.size
-        stations =
-            newStations.filter { !it.name.isNullOrBlank() && !it.resolvedUrl.isNullOrBlank() }
-        val newSize = stations.size
-        notifyItemRangeChanged(oldSize, newSize)
+        stations = newStations.filter { !it.name.isNullOrBlank() && !it.resolvedUrl.isNullOrBlank() && !it.favicon.isNullOrBlank() }
+        notifyDataSetChanged()
+
     }
 
     fun setCurrentStation(station: RadioStation?) {

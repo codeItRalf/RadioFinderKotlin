@@ -34,7 +34,6 @@ class RadioRepository private constructor() {
             val result = withContext(Dispatchers.IO) {
                 radioService.searchByName(queryParams)
             }
-            Log.d("RadioRepository", "Result: ${result.size}")
             result.map {
                 RadioStation.fromJson(it) }
 
@@ -46,26 +45,31 @@ class RadioRepository private constructor() {
     }
 
 
-    suspend fun clickCounter(stationUuid: String): Map<String, Any> {
-        val queryParams = mapOf("stationUuid" to stationUuid)
+    suspend fun clickCounter(stationUuid: String): Boolean {
+
         return try {
-            withContext(Dispatchers.IO) {
-                radioService.clickCounter(queryParams)
+            val response = withContext(Dispatchers.IO) {
+                radioService.clickCounter(stationUuid)
             }
+            val responseString = response.toString()
+
+            response["ok"] as? Boolean ?: false
         } catch (e: Exception) {
-            // Log the error
+             Log.d("RadioRepository", "Click counter failed", e)
             e.printStackTrace()
-            throw e
+            false
         }
     }
 
     suspend fun getStationCheck(stationUuid: String): List<StationCheck> {
-        val queryParams = mapOf("stationUuid" to stationUuid)
+        val queryParams = mapOf("stationuuid" to stationUuid,
+            "limit" to "1")
         return try {
           val result =   withContext(Dispatchers.IO) {
                 radioService.getStationCheck(queryParams)
             }
-
+            val responseString = result.toString()
+            Log.d("RadioRepository", "getStationCheck: $responseString")
             result.map {
                 StationCheck.fromJson(it)
             }

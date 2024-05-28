@@ -49,6 +49,7 @@ class RadioViewModel : ViewModel() {
             try {
                 val result = repository.searchStationsByName(searchTerm, limit, 0)
                 _stations.value = result
+
             } catch (e: Exception) {
                 Log.e("RadioViewModel", "Failed to fetch stations", e)
             } finally {

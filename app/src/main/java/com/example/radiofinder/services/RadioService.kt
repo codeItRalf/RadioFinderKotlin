@@ -2,6 +2,7 @@ package com.example.radiofinder.services
 
 import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.Path
 import retrofit2.http.QueryMap
 
 interface RadioService {
@@ -12,10 +13,10 @@ interface RadioService {
 
     @POST("url/{stationUuid}")
     suspend fun clickCounter(
-        @QueryMap options: Map<String, String>
+        @Path("stationUuid") stationUuid: String
     ): Map<String, Any>
 
-    @GET("checks/{stationUuid}")
+    @GET("checks")
     suspend fun getStationCheck(
         @QueryMap options: Map<String, String>
     ): List<Map<String, Any>>
