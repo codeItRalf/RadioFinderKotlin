@@ -22,6 +22,7 @@ import com.example.radiofinder.data.repository.RadioRepository
 import com.example.radiofinder.services.ServiceConnectionManager
 import com.example.radiofinder.ui.details.DetailsActivity
 import com.example.radiofinder.viewmodel.RadioViewModel
+import com.squareup.picasso.Picasso
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -31,6 +32,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var serviceConnectionManager: ServiceConnectionManager
     private lateinit var floatingController: View
     private lateinit var controllerStationName: TextView
+    private lateinit var controllerImage: ImageView
     private lateinit var controllerPlayPauseButton: ImageView
     private lateinit var viewModel: RadioViewModel
     private lateinit var recyclerView: RecyclerView
@@ -48,6 +50,7 @@ class MainActivity : AppCompatActivity() {
 
         floatingController = findViewById(R.id.floating_station_controller)
         controllerStationName = floatingController.findViewById(R.id.controller_station_name)
+        controllerImage = floatingController.findViewById(R.id.station_image)
         controllerPlayPauseButton =
             floatingController.findViewById(R.id.controller_play_pause_button)
         controllerLoadingIndicator =
@@ -149,6 +152,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateControllerUI(currentStation: RadioStation?, isPlaying: Boolean) {
         if (currentStation != null) {
+            if (!currentStation.favicon.isNullOrBlank()) {
+                Picasso.get().load(currentStation.favicon).into(controllerImage)
+            }
+
             controllerStationName.text = currentStation.name
             controllerPlayPauseButton.setImageResource(
                 if (isPlaying) android.R.drawable.ic_media_pause else android.R.drawable.ic_media_play

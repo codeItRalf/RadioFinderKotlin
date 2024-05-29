@@ -82,9 +82,31 @@ class RadioStationAdapter(
     override fun getItemCount(): Int = stations.size
 
     fun submitList(newStations: List<RadioStation>) {
-        stations = newStations.filter { !it.name.isNullOrBlank() && !it.resolvedUrl.isNullOrBlank() && !it.favicon.isNullOrBlank() }
-        notifyDataSetChanged()
 
+        var stationsToAdd = newStations.filter { !it.name.isNullOrBlank() && !it.resolvedUrl.isNullOrBlank() && !it.favicon.isNullOrBlank() }
+
+        // Check if this is a pagination update
+        val isPagination = if (stationsToAdd.size > stations.size) {
+            var isPagination = true
+            for (i in stations.indices) {
+                if (stationsToAdd[i] != stations[i]) {
+                    isPagination = false
+                    break
+                }
+            }
+            isPagination
+        } else {
+            false
+        }
+
+        if (isPagination) {
+            val oldSize = stations.size
+            stations = stations + stationsToAdd.subList(oldSize, stationsToAdd.size)
+            notifyItemRangeInserted(oldSize, stationsToAdd.size - oldSize)
+        } else {
+            stations = stationsToAdd
+            notifyDataSetChanged()
+        }
     }
 
     fun setCurrentStation(station: RadioStation?) {
