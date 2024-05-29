@@ -92,6 +92,7 @@ class PlayerService : Service() {
                 notificationHandler.updateNotification("Playing", true, _currentStation.value)
             } catch (e: Exception) {
                 Log.e("PlayerService", "Error playing station", e)
+                exoPlayer.stop()
                 _currentStation.value = null
                 Toast.makeText(this, e.message, Toast.LENGTH_SHORT).show()
             }

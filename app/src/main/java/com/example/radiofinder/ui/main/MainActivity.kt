@@ -1,6 +1,8 @@
 package com.example.radiofinder.ui.main
 
 import android.content.Intent
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffColorFilter
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -12,6 +14,7 @@ import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -59,6 +62,17 @@ class MainActivity : AppCompatActivity() {
         controllerPlayPauseButton.setOnClickListener {
             playPause(null)
         }
+        floatingController.setOnClickListener {
+            serviceConnectionManager.getService()?.getStation().let {
+                if (it != null) {
+                    openStationDetails(it)
+                }
+            }
+
+        }
+
+
+
 
         setupToolbar()
         setupViewModel()
@@ -68,6 +82,8 @@ class MainActivity : AppCompatActivity() {
 
         viewModel.searchStations("") // Initial search example
     }
+
+
 
     private fun setupToolbar() {
         val toolbar: androidx.appcompat.widget.Toolbar = findViewById(R.id.toolbar)
@@ -83,16 +99,20 @@ class MainActivity : AppCompatActivity() {
         recyclerView.layoutManager = LinearLayoutManager(this)
         adapter = RadioStationAdapter(
             { station ->
-                val intent = Intent(this, DetailsActivity::class.java).apply {
-                    putExtra("station", station)
-                }
-                startActivity(intent)
+                openStationDetails(station)
             },
             { station ->
                 playPause(station)
             },
         )
         recyclerView.adapter = adapter
+    }
+
+    private fun openStationDetails(station: RadioStation) {
+        val intent = Intent(this, DetailsActivity::class.java).apply {
+            putExtra("station", station)
+        }
+        startActivity(intent)
     }
 
     private fun setupObservers() {
@@ -188,7 +208,12 @@ class MainActivity : AppCompatActivity() {
     private fun setupSearch(menu: Menu) {
         val searchItem = menu.findItem(R.id.action_search)
         val searchView = searchItem.actionView as SearchView
-
+        val searchIcon = searchItem.icon
+        searchIcon?.mutate() // Create a new drawable instance so that all icons don't change
+        val color = ContextCompat.getColor(this, R.color.neon_pink)
+        val mode = PorterDuff.Mode.SRC_IN
+        val colorFilter = PorterDuffColorFilter(color, mode)
+        searchIcon?.colorFilter = colorFilter
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
                 return false

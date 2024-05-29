@@ -1,0 +1,24 @@
+<!-- res/drawable/card_background.xml -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Neon blue shadow -->
+    <item android:left="4dp" android:right="4dp" android:top="4dp" android:bottom="4dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#00000000"/>
+            <corners android:radius="8dp"/>
+            <padding android:left="4dp" android:right="4dp" android:top="4dp" android:bottom="4dp"/>
+            <shadowColor android:color="@color/neon_blue"/>
+            <shadowDx android:shadowDx="2"/>
+            <shadowDy android:shadowDy="2"/>
+            <shadowRadius android:shadowRadius="6"/>
+        </shape>
+    </item>
+
+    <!-- Neon pink border -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/dark_gray"/>
+            <corners android:radius="8dp"/>
+            <stroke android:width="2dp" android:color="@color/neon_pink"/>
+        </shape>
+    </item>
+</layer-list>
