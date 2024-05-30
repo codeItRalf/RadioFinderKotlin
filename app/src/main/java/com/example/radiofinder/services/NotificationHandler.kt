@@ -7,51 +7,25 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import androidx.annotation.OptIn
 import androidx.core.app.NotificationCompat
+import androidx.media3.common.util.UnstableApi
 import com.example.radiofinder.R
 import com.example.radiofinder.data.model.RadioStation
 import com.example.radiofinder.ui.main.MainActivity
 
 class NotificationHandler(private val context: Context) {
+
+    private val channelId = "radio_channel_id"
+
+    init {
+        createNotificationChannel()
+    }
+
+    @OptIn(UnstableApi::class)
     fun createNotification(contentText: String, isPlaying: Boolean, currentStation: RadioStation?): Notification {
-        val notificationIntent = Intent(context, MainActivity::class.java)
-        val pendingIntent = PendingIntent.getActivity(
-            context,
-            0,
-            notificationIntent,
-            PendingIntent.FLAG_IMMUTABLE
-        )
-
-        val playPauseAction = if (isPlaying) {
-            val pauseIntent = Intent(context, PlayerService::class.java).apply {
-                action = PlayerService.ACTION_PLAY_PAUSE
-            }
-            val pausePendingIntent =
-                PendingIntent.getService(context, 0, pauseIntent, PendingIntent.FLAG_IMMUTABLE)
-            NotificationCompat.Action(
-                android.R.drawable.ic_media_pause,
-                "Pause",
-                pausePendingIntent
-            )
-        } else {
-            val playIntent = Intent(context, PlayerService::class.java).apply {
-                action = PlayerService.ACTION_PLAY_PAUSE
-            }
-            val playPendingIntent =
-                PendingIntent.getService(context, 0, playIntent, PendingIntent.FLAG_IMMUTABLE)
-            NotificationCompat.Action(android.R.drawable.ic_media_play, "Play", playPendingIntent)
-        }
-
-        val channelId = "radio_channel_id"
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                channelId,
-                "Radio Service Channel",
-                NotificationManager.IMPORTANCE_LOW
-            )
-            val manager = context.getSystemService(NotificationManager::class.java)
-            manager.createNotificationChannel(channel)
-        }
+        val pendingIntent = createPendingIntent()
+        val playPauseAction = createPlayPauseAction(isPlaying)
 
         return NotificationCompat.Builder(context, channelId)
             .setContentTitle(currentStation?.name ?: "")
@@ -63,10 +37,47 @@ class NotificationHandler(private val context: Context) {
             .build()
     }
 
+    @OptIn(UnstableApi::class)
     fun updateNotification(contentText: String, isPlaying: Boolean, currentStation: RadioStation?) {
         val notification = createNotification(contentText, isPlaying, currentStation)
         val notificationManager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.notify(PlayerService.NOTIFICATION_ID, notification)
+    }
+
+    @OptIn(UnstableApi::class)
+    private fun createPendingIntent(): PendingIntent {
+        val notificationIntent = Intent(context, MainActivity::class.java)
+        return PendingIntent.getActivity(
+            context,
+            0,
+            notificationIntent,
+            PendingIntent.FLAG_IMMUTABLE
+        )
+    }
+
+    @OptIn(UnstableApi::class)
+    private fun createPlayPauseAction(isPlaying: Boolean): NotificationCompat.Action {
+        val actionIntent = Intent(context, PlayerService::class.java).apply {
+            action = PlayerService.ACTION_PLAY_PAUSE
+        }
+        val actionPendingIntent = PendingIntent.getService(context, 0, actionIntent, PendingIntent.FLAG_IMMUTABLE)
+        return if (isPlaying) {
+            NotificationCompat.Action(android.R.drawable.ic_media_pause, "Pause", actionPendingIntent)
+        } else {
+            NotificationCompat.Action(android.R.drawable.ic_media_play, "Play", actionPendingIntent)
+        }
+    }
+
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                channelId,
+                "Radio Service Channel",
+                NotificationManager.IMPORTANCE_LOW
+            )
+            val manager = context.getSystemService(NotificationManager::class.java)
+            manager.createNotificationChannel(channel)
+        }
     }
 }

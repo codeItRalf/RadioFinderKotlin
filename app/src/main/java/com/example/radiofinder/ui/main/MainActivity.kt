@@ -6,8 +6,8 @@ import android.graphics.PorterDuffColorFilter
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import android.view.Menu
+import android.view.MenuItem
 import android.view.View
 import android.widget.ImageView
 import android.widget.ProgressBar
@@ -23,7 +23,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.radiofinder.R
 import com.example.radiofinder.data.model.RadioStation
 import com.example.radiofinder.data.repository.RadioRepository
-import com.example.radiofinder.services.FFTAudioProcessor
+import com.example.radiofinder.services.PlayerService
 import com.example.radiofinder.services.ServiceConnectionManager
 import com.example.radiofinder.ui.details.DetailsActivity
 import com.example.radiofinder.viewmodel.RadioViewModel
@@ -56,30 +56,8 @@ class MainActivity : AppCompatActivity() {
 
         // Initialize the ServiceConnectionManager
         serviceConnectionManager = ServiceConnectionManager(this)
-
-
-        floatingController = findViewById(R.id.floating_station_controller)
-        controllerStationName = floatingController.findViewById(R.id.controller_station_name)
-        controllerImage = floatingController.findViewById(R.id.station_image)
-        controllerPlayPauseButton =
-            floatingController.findViewById(R.id.controller_play_pause_button)
-        controllerLoadingIndicator =
-            floatingController.findViewById(R.id.controller_loading_indicator)
-        // Set play/pause button click listener
-        controllerPlayPauseButton.setOnClickListener {
-            playPause(null)
-        }
-        floatingController.setOnClickListener {
-            serviceConnectionManager.getService()?.getStation().let {
-                if (it != null) {
-                    openStationDetails(it)
-                }
-            }
-
-        }
-
-
-
+        initializeViews()
+        setupFloatingController()
 
         setupToolbar()
         setupViewModel()
@@ -90,7 +68,28 @@ class MainActivity : AppCompatActivity() {
         viewModel.searchStations("") // Initial search example
     }
 
+    private fun initializeViews() {
+        floatingController = findViewById(R.id.floating_station_controller)
+        controllerStationName = floatingController.findViewById(R.id.controller_station_name)
+        controllerImage = floatingController.findViewById(R.id.station_image)
+        controllerPlayPauseButton = floatingController.findViewById(R.id.controller_play_pause_button)
+        controllerLoadingIndicator = floatingController.findViewById(R.id.controller_loading_indicator)
+        loadingIndicator = findViewById(R.id.loadingIndicator)
+        recyclerView = findViewById(R.id.recyclerView)
+        visualizer = findViewById(R.id.visualizer)
+    }
 
+    private fun setupFloatingController() {
+        // Set play/pause button click listener
+        controllerPlayPauseButton.setOnClickListener {
+            playPause(null)
+        }
+        floatingController.setOnClickListener {
+            serviceConnectionManager.getService()?.getStation()?.let {
+                openStationDetails(it)
+            }
+        }
+    }
 
     private fun setupToolbar() {
         val toolbar: androidx.appcompat.widget.Toolbar = findViewById(R.id.toolbar)
@@ -102,7 +101,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupRecyclerView() {
-        recyclerView = findViewById(R.id.recyclerView)
+
         recyclerView.layoutManager = LinearLayoutManager(this)
         adapter = RadioStationAdapter(
             { station ->
@@ -123,62 +122,83 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupObservers() {
-        loadingIndicator = findViewById(R.id.loadingIndicator)
+        setupStationsObserver()
+        setupLoadingObserver()
+        setupServiceObservers()
+    }
 
+    private fun setupStationsObserver() {
         viewModel.stations.observe(this) { stations ->
             val filteredStations = stations.filter {
                 !it.name.isNullOrBlank() && !it.resolvedUrl.isNullOrBlank()
             }
             adapter.submitList(filteredStations)
         }
+    }
 
+    private fun setupLoadingObserver() {
         viewModel.isLoading.observe(this) { isLoading ->
             loadingIndicator.visibility = if (isLoading) View.VISIBLE else View.GONE
         }
+    }
 
+    private fun setupServiceObservers() {
         serviceConnectionManager.bindService { playerService ->
-            playerService?.currentStation?.observe(this, Observer { station ->
-                CoroutineScope(Dispatchers.IO).launch {
-                    try {
-                        if (station != null) {
-                            val result =
-                                RadioRepository.getInstance().clickCounter(station.stationUuid)
-                        }
-                    } catch (e: Exception) {
-                        // Log the error if needed
-                    }
-                }
+            playerService?.let {
+                it.currentStation.observe(this@MainActivity, Observer { station ->
+                    handleStationUpdate(station, it)
+                })
 
-                updateControllerUI(station, playerService.isPlaying())
-                adapter.setCurrentStation(station)
-            })
+                visualizer?.processor = it.getAudioProcessor()
+                visualizer?.updateProcessorListenerState(true)
 
-            visualizer = findViewById(R.id.visualizer)
-            visualizer?.processor = playerService?.getAudioProcessor()
-            visualizer?.updateProcessorListenerState(true)
+                it.isPlaying.observe(this@MainActivity, Observer { playing ->
+                    handlePlayingUpdate(it, playing)
+                })
 
-            playerService?.isPlaying?.observe(this, Observer { playing ->
-                updateControllerUI(playerService.getStation(), playing)
-                adapter.setIsPlaying(playing)
-                if (playing) {
-                    controllerPlayPauseButton.setImageResource(android.R.drawable.ic_media_pause)
-                } else {
-                    controllerPlayPauseButton.setImageResource(android.R.drawable.ic_media_play)
-                }
-            })
-
-            playerService?.isLoading?.observe(this, Observer { loading ->
-                adapter.setIsLoading(loading)
-                if (loading) {
-                    controllerPlayPauseButton.visibility = View.GONE
-                    controllerLoadingIndicator.visibility = View.VISIBLE
-                } else {
-                    controllerPlayPauseButton.visibility = View.VISIBLE
-                    controllerLoadingIndicator.visibility = View.GONE
-                }
-            })
+                it.isLoading.observe(this@MainActivity, Observer { loading ->
+                    handleLoadingUpdate(loading)
+                })
+            }
         }
     }
+
+    private fun handleStationUpdate(station: RadioStation?, playerService: PlayerService) {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                station?.let {
+                    RadioRepository.getInstance().clickCounter(it.stationUuid)
+                }
+            } catch (e: Exception) {
+                // Log the error if needed
+            }
+        }
+
+        updateControllerUI(station, playerService.isPlaying())
+        adapter.setCurrentStation(station)
+    }
+
+    private fun handlePlayingUpdate(playerService: PlayerService, playing: Boolean) {
+        updateControllerUI(playerService.getStation(), playing)
+        adapter.setIsPlaying(playing)
+        if (playing) {
+            controllerPlayPauseButton.setImageResource(android.R.drawable.ic_media_pause)
+        } else {
+            controllerPlayPauseButton.setImageResource(android.R.drawable.ic_media_play)
+        }
+    }
+
+    private fun handleLoadingUpdate(loading: Boolean) {
+        adapter.setIsLoading(loading)
+        if (loading) {
+            controllerPlayPauseButton.visibility = View.GONE
+            controllerLoadingIndicator.visibility = View.VISIBLE
+        } else {
+            controllerPlayPauseButton.visibility = View.VISIBLE
+            controllerLoadingIndicator.visibility = View.GONE
+        }
+    }
+
 
     private fun updateControllerUI(currentStation: RadioStation?, isPlaying: Boolean) {
         if (currentStation != null) {
@@ -217,13 +237,19 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupSearch(menu: Menu) {
         val searchItem = menu.findItem(R.id.action_search)
-        val searchView = searchItem.actionView as SearchView
+        setupSearchIcon(searchItem)
+        setupSearchView(searchItem.actionView as SearchView)
+    }
+
+    private fun setupSearchIcon(searchItem: MenuItem) {
         val searchIcon = searchItem.icon
         searchIcon?.mutate() // Create a new drawable instance so that all icons don't change
         val color = ContextCompat.getColor(this, R.color.neon_pink)
-        val mode = PorterDuff.Mode.SRC_IN
-        val colorFilter = PorterDuffColorFilter(color, mode)
+        val colorFilter = PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN)
         searchIcon?.colorFilter = colorFilter
+    }
+
+    private fun setupSearchView(searchView: SearchView) {
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
                 return false
@@ -239,6 +265,7 @@ class MainActivity : AppCompatActivity() {
             }
         })
     }
+
 
     private fun playPause(station: RadioStation?) {
         val playerService = serviceConnectionManager.getService()

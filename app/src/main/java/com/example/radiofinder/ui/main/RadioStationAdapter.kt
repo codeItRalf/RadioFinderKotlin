@@ -1,15 +1,11 @@
 package com.example.radiofinder.ui.main
 
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.RecyclerView
 import com.example.radiofinder.R
 import com.example.radiofinder.data.model.RadioStation
@@ -36,7 +32,6 @@ class RadioStationAdapter(
         private val tagsTextView: TextView = view.findViewById(R.id.station_tags)
         private val stationImageView: ImageView = view.findViewById(R.id.station_image)
         private val playButton: ImageView = view.findViewById(R.id.play_button)
-
         private val playButtonLoadingIndicator: ProgressBar = view.findViewById(R.id.playButtonLoadingIndicator)
 
         fun bind(station: RadioStation) {
@@ -83,7 +78,7 @@ class RadioStationAdapter(
 
     fun submitList(newStations: List<RadioStation>) {
 
-        var stationsToAdd = newStations.filter { !it.name.isNullOrBlank() && !it.resolvedUrl.isNullOrBlank() && !it.favicon.isNullOrBlank() }
+        val stationsToAdd = newStations.filter { !it.name.isNullOrBlank() && !it.resolvedUrl.isNullOrBlank() && !it.favicon.isNullOrBlank() }
 
         // Check if this is a pagination update
         val isPagination = if (stationsToAdd.size > stations.size) {
