@@ -19,6 +19,7 @@ import androidx.media3.datasource.DefaultDataSourceFactory
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.Renderer
+import androidx.media3.exoplayer.audio.AudioCapabilities
 import androidx.media3.exoplayer.audio.AudioRendererEventListener
 import androidx.media3.exoplayer.audio.AudioSink
 import androidx.media3.exoplayer.audio.DefaultAudioSink
@@ -58,17 +59,10 @@ class PlayerService : Service() {
         val renderersFactory = object : DefaultRenderersFactory(context) {
 
             val fftAudioProcessor = FFTAudioProcessor()
-            val silenceSkippingAudioProcessor = SilenceSkippingAudioProcessor()
-            val sonicAudioProcessor = SonicAudioProcessor()
-
-            // Create an array of available audio processors
-            val toIntPcmAvailableAudioProcessors = emptyArray<AudioProcessor>()
 
             // Create a DefaultAudioProcessorChain
             val audioProcessorChain = DefaultAudioSink.DefaultAudioProcessorChain(
-                toIntPcmAvailableAudioProcessors,
-                silenceSkippingAudioProcessor,
-                sonicAudioProcessor,
+                fftAudioProcessor,
 
             )
             // Create a Builder object for DefaultAudioSink
