@@ -2,6 +2,7 @@ package com.example.radiofinder.services
 
 import android.media.AudioRecord.ERROR_BAD_VALUE
 import android.media.AudioTrack
+import android.util.Log
 import androidx.annotation.OptIn
 import androidx.media3.common.C
 import androidx.media3.common.Format
@@ -175,6 +176,7 @@ class FFTAudioProcessor : AudioProcessor {
     }
 
     private fun processFFT(buffer: ByteBuffer) {
+        Log.d("FFTAudioProcessor", "Processing FFT data, listener is null: ${listener == null}")
         if (listener == null) {
             return
         }
@@ -203,6 +205,10 @@ class FFTAudioProcessor : AudioProcessor {
             srcBuffer.compact()
             srcBufferPosition -= bytesToProcess
             srcBuffer.position(srcBufferPosition)
+
+            // Log FFT data for debugging
+            Log.d("FFTAudioProcessor", "Processed FFT data: ${src.contentToString()}")
+
             val fft = noise?.fft(src, dst)!!
             listener?.onFFTReady(inputAudioFormat.sampleRate, inputAudioFormat.channelCount, fft)
         }

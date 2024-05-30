@@ -2,6 +2,7 @@ package com.example.radiofinder.views
 
 import android.content.Context
 import android.util.AttributeSet
+import android.util.Log
 import android.widget.FrameLayout
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
@@ -25,7 +26,8 @@ class ExoVisualizer @JvmOverloads constructor(
         addView(bandView, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
     }
 
-    private fun updateProcessorListenerState(enable: Boolean) {
+     fun updateProcessorListenerState(enable: Boolean) {
+        Log.d("ExoVisualizer", "Updating processor listener state: $enable, processor is null: ${processor == null}, listener is null: ${processor?.listener == null}")
         if (enable) {
             processor?.listener = this
         } else {
@@ -34,19 +36,12 @@ class ExoVisualizer @JvmOverloads constructor(
         }
     }
 
-    override fun onAttachedToWindow() {
-        super.onAttachedToWindow()
-        updateProcessorListenerState(true)
-    }
 
-    override fun onDetachedFromWindow() {
-        super.onDetachedFromWindow()
-        updateProcessorListenerState(false)
-    }
 
     override fun onFFTReady(sampleRateHz: Int, channelCount: Int, fft: FloatArray) {
         currentWaveform = fft
         bandView.onFFT(fft)
+        Log.d("ExoVisualizer", "FFT data received: ${fft.contentToString()}")
     }
 
 }

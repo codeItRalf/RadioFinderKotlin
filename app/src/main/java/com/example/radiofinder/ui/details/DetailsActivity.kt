@@ -1,6 +1,7 @@
 package com.example.radiofinder.ui.details
 
 import android.os.Bundle
+import android.view.MenuItem
 import android.view.View
 import android.widget.Button
 import android.widget.ImageButton
@@ -8,15 +9,19 @@ import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
+import androidx.annotation.OptIn
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
+import androidx.media3.common.util.UnstableApi
 import com.example.radiofinder.R
 import com.example.radiofinder.data.model.RadioStation
 import com.example.radiofinder.data.model.StationCheck
 import com.example.radiofinder.services.ServiceConnectionManager
 import com.squareup.picasso.Picasso
 
+@UnstableApi
 class DetailsActivity : AppCompatActivity() {
 
     private lateinit var serviceConnectionManager: ServiceConnectionManager
@@ -32,6 +37,8 @@ class DetailsActivity : AppCompatActivity() {
     private lateinit var station: RadioStation
     private lateinit var viewModel: DetailsViewModel
     private lateinit var playButtonLoadingIndicator: ProgressBar
+
+    @OptIn(UnstableApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_details)
@@ -43,11 +50,27 @@ class DetailsActivity : AppCompatActivity() {
             return
         }
 
+        val toolbar: Toolbar = findViewById(R.id.toolbar)
+        setSupportActionBar(toolbar)
+
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+
         initViews()
         bindDataToViews(station)
         setupViewModel()
         setupObservers()
     }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            android.R.id.home -> {
+                onBackPressed()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
+
 
     private fun setupViewModel() {
         viewModel = ViewModelProvider(this)[DetailsViewModel::class.java]

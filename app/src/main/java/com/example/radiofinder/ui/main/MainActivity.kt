@@ -48,6 +48,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var controllerLoadingIndicator: ProgressBar
     private val handler = Handler(Looper.getMainLooper())
     private var searchRunnable: Runnable? = null
+    private lateinit var visualizer: ExoVisualizer
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -137,7 +138,6 @@ class MainActivity : AppCompatActivity() {
 
         serviceConnectionManager.bindService { playerService ->
             playerService?.currentStation?.observe(this, Observer { station ->
-
                 CoroutineScope(Dispatchers.IO).launch {
                     try {
                         if (station != null) {
@@ -152,6 +152,10 @@ class MainActivity : AppCompatActivity() {
                 updateControllerUI(station, playerService.isPlaying())
                 adapter.setCurrentStation(station)
             })
+
+            visualizer = findViewById<ExoVisualizer>(R.id.visualizer)
+            visualizer.processor = playerService?.getAudioProcessor()
+            visualizer.updateProcessorListenerState(true)
 
             playerService?.isPlaying?.observe(this, Observer { playing ->
                 updateControllerUI(playerService.getStation(), playing)
@@ -249,6 +253,7 @@ class MainActivity : AppCompatActivity() {
     override fun onStop() {
         super.onStop()
         serviceConnectionManager.unbindService()
+        visualizer.updateProcessorListenerState(true)
     }
 
 

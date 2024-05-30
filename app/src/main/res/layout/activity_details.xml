@@ -7,19 +7,20 @@
     android:padding="16dp"
     tools:context=".ui.details.DetailsActivity">
 
-    <com.google.android.material.appbar.AppBarLayout
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar">
+        android:layout_height="?attr/actionBarSize"
+        android:background="?attr/colorPrimary"
+        android:elevation="4dp"
+        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
+        app:title="Details"
+        app:titleTextColor="@color/neon_blue"
+        app:layout_constraintTop_toTopOf="parent">
 
-        <androidx.appcompat.widget.Toolbar
-            android:id="@+id/toolbar"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:background="@color/neon_blue"
-            app:titleTextColor="@android:color/white"
-            app:popupTheme="@style/ThemeOverlay.AppCompat.Light" />
-    </com.google.android.material.appbar.AppBarLayout>
+
+
+    </androidx.appcompat.widget.Toolbar>
 
     <ProgressBar
         android:id="@+id/loadingIndicator"

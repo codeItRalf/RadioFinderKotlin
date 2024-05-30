@@ -13,22 +13,18 @@ import androidx.lifecycle.MutableLiveData
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.audio.AudioProcessor
-import androidx.media3.common.audio.SonicAudioProcessor
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DefaultDataSourceFactory
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.Renderer
-import androidx.media3.exoplayer.audio.AudioCapabilities
 import androidx.media3.exoplayer.audio.AudioRendererEventListener
 import androidx.media3.exoplayer.audio.AudioSink
 import androidx.media3.exoplayer.audio.DefaultAudioSink
 import androidx.media3.exoplayer.audio.MediaCodecAudioRenderer
-import androidx.media3.exoplayer.audio.SilenceSkippingAudioProcessor
 import androidx.media3.exoplayer.mediacodec.MediaCodecSelector
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import com.example.radiofinder.data.model.RadioStation
-import com.example.radiofinder.views.ExoVisualizer
 
 @UnstableApi
 class PlayerService : Service() {
@@ -44,10 +40,7 @@ class PlayerService : Service() {
 
     private val _isPlaying = MutableLiveData<Boolean>()
     val isPlaying: LiveData<Boolean> get() = _isPlaying
-
-    private lateinit var visualizer: ExoVisualizer
-    private lateinit var fftAudioProcessor: FFTAudioProcessor
-
+    private val _fftAudioProcessor = FFTAudioProcessor()
 
 
     override fun onCreate() {
@@ -58,11 +51,9 @@ class PlayerService : Service() {
 
         val renderersFactory = object : DefaultRenderersFactory(context) {
 
-            val fftAudioProcessor = FFTAudioProcessor()
-
             // Create a DefaultAudioProcessorChain
             val audioProcessorChain = DefaultAudioSink.DefaultAudioProcessorChain(
-                fftAudioProcessor,
+                _fftAudioProcessor,
 
             )
             // Create a Builder object for DefaultAudioSink
@@ -159,9 +150,12 @@ class PlayerService : Service() {
             try {
 
 
-
-                val mediaItem = MediaItem.fromUri(station.resolvedUrl!!)
-                exoPlayer.setMediaItem(mediaItem)
+                val mediaSource = ProgressiveMediaSource.Factory(
+                    DefaultDataSourceFactory(this, "ExoVisualizer")
+                ).createMediaSource(MediaItem.Builder().setUri(station.resolvedUrl!!).build())
+//                val mediaItem = MediaItem.fromUri(station.resolvedUrl!!)
+//                exoPlayer.setMediaItem(mediaItem)
+                exoPlayer.setMediaSource(mediaSource)
                 exoPlayer.prepare()
                 exoPlayer.play()
                 notificationHandler.updateNotification("Playing", true, _currentStation.value)
@@ -224,6 +218,10 @@ class PlayerService : Service() {
 
     fun getStation(): RadioStation? {
         return _currentStation.value
+    }
+
+    fun getAudioProcessor(): FFTAudioProcessor {
+        return _fftAudioProcessor
     }
 
 
