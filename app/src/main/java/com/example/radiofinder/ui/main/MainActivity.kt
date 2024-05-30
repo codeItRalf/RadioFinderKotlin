@@ -17,19 +17,23 @@ import androidx.appcompat.widget.SearchView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
+import androidx.media3.common.util.UnstableApi
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.radiofinder.R
 import com.example.radiofinder.data.model.RadioStation
 import com.example.radiofinder.data.repository.RadioRepository
+import com.example.radiofinder.services.FFTAudioProcessor
 import com.example.radiofinder.services.ServiceConnectionManager
 import com.example.radiofinder.ui.details.DetailsActivity
 import com.example.radiofinder.viewmodel.RadioViewModel
+import com.example.radiofinder.views.ExoVisualizer
 import com.squareup.picasso.Picasso
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
+@UnstableApi
 class MainActivity : AppCompatActivity() {
 
     private lateinit var serviceConnectionManager: ServiceConnectionManager
@@ -44,12 +48,14 @@ class MainActivity : AppCompatActivity() {
     private lateinit var controllerLoadingIndicator: ProgressBar
     private val handler = Handler(Looper.getMainLooper())
     private var searchRunnable: Runnable? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
         // Initialize the ServiceConnectionManager
         serviceConnectionManager = ServiceConnectionManager(this)
+
 
         floatingController = findViewById(R.id.floating_station_controller)
         controllerStationName = floatingController.findViewById(R.id.controller_station_name)

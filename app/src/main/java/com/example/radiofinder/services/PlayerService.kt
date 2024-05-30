@@ -1,28 +1,35 @@
 package com.example.radiofinder.services
 
-import android.app.Notification
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.os.Binder
-import android.os.Build
+import android.os.Handler
 import android.os.IBinder
 import android.util.Log
 import android.widget.Toast
-import androidx.core.app.NotificationCompat
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
+import androidx.media3.common.audio.AudioProcessor
+import androidx.media3.common.audio.SonicAudioProcessor
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.DefaultDataSourceFactory
+import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
-import com.example.radiofinder.R
+import androidx.media3.exoplayer.Renderer
+import androidx.media3.exoplayer.audio.AudioRendererEventListener
+import androidx.media3.exoplayer.audio.AudioSink
+import androidx.media3.exoplayer.audio.DefaultAudioSink
+import androidx.media3.exoplayer.audio.MediaCodecAudioRenderer
+import androidx.media3.exoplayer.audio.SilenceSkippingAudioProcessor
+import androidx.media3.exoplayer.mediacodec.MediaCodecSelector
+import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import com.example.radiofinder.data.model.RadioStation
-import com.example.radiofinder.ui.main.MainActivity
+import com.example.radiofinder.views.ExoVisualizer
 
+@UnstableApi
 class PlayerService : Service() {
 
     private val binder = PlayerBinder()
@@ -37,10 +44,78 @@ class PlayerService : Service() {
     private val _isPlaying = MutableLiveData<Boolean>()
     val isPlaying: LiveData<Boolean> get() = _isPlaying
 
+    private lateinit var visualizer: ExoVisualizer
+    private lateinit var fftAudioProcessor: FFTAudioProcessor
+
+
+
     override fun onCreate() {
         super.onCreate()
-        exoPlayer = ExoPlayer.Builder(this)
-            .setMediaSourceFactory(DefaultMediaSourceFactory(this))
+        val context = this
+
+
+
+        val renderersFactory = object : DefaultRenderersFactory(context) {
+
+            val fftAudioProcessor = FFTAudioProcessor()
+            val silenceSkippingAudioProcessor = SilenceSkippingAudioProcessor()
+            val sonicAudioProcessor = SonicAudioProcessor()
+
+            // Create an array of available audio processors
+            val toIntPcmAvailableAudioProcessors = emptyArray<AudioProcessor>()
+
+            // Create a DefaultAudioProcessorChain
+            val audioProcessorChain = DefaultAudioSink.DefaultAudioProcessorChain(
+                toIntPcmAvailableAudioProcessors,
+                silenceSkippingAudioProcessor,
+                sonicAudioProcessor,
+
+            )
+            // Create a Builder object for DefaultAudioSink
+            val audioSinkBuilder = DefaultAudioSink.Builder()
+                .setAudioProcessorChain(
+                    audioProcessorChain
+                )
+
+            // Create a DefaultAudioSink object
+            val defaultAudioSink = audioSinkBuilder.build()
+
+
+            override fun buildAudioRenderers(
+                context: Context,
+                extensionRendererMode: Int,
+                mediaCodecSelector: MediaCodecSelector,
+                enableDecoderFallback: Boolean,
+                audioSink: AudioSink,
+                eventHandler: Handler,
+                eventListener: AudioRendererEventListener,
+                out: ArrayList<Renderer>
+            ) {
+                out.add(
+                    MediaCodecAudioRenderer(
+                        context,
+                        mediaCodecSelector,
+                        enableDecoderFallback,
+                        eventHandler,
+                        eventListener,
+                        defaultAudioSink
+                    )
+                )
+
+                super.buildAudioRenderers(
+                    context,
+                    extensionRendererMode,
+                    mediaCodecSelector,
+                    enableDecoderFallback,
+                    audioSink,
+                    eventHandler,
+                    eventListener,
+                    out
+                )
+            }
+        }
+
+        exoPlayer = ExoPlayer.Builder(context, renderersFactory)
             .build()
         exoPlayer.addListener(object : Player.Listener {
             override fun onIsPlayingChanged(isPlaying: Boolean) {
@@ -57,11 +132,14 @@ class PlayerService : Service() {
             }
 
         })
+
+
         startForeground(
             NOTIFICATION_ID,
             notificationHandler.createNotification("Radio Player", false, _currentStation.value)
         )
     }
+
 
     override fun onBind(intent: Intent?): IBinder {
         return binder
@@ -85,6 +163,9 @@ class PlayerService : Service() {
         } else {
             _currentStation.value = station
             try {
+
+
+
                 val mediaItem = MediaItem.fromUri(station.resolvedUrl!!)
                 exoPlayer.setMediaItem(mediaItem)
                 exoPlayer.prepare()
@@ -102,7 +183,7 @@ class PlayerService : Service() {
 
      fun stopMedia() {
         exoPlayer.stop()
-        stopForeground(true)
+        stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
     }
 

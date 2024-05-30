@@ -54,6 +54,7 @@ android {
 }
 
 dependencies {
+    implementation( libs.noise)
     implementation(libs.material)
     implementation (libs.picasso)
     implementation(libs.androidx.navigation.fragment.ktx)
@@ -72,6 +73,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.firebase.firestore.ktx)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

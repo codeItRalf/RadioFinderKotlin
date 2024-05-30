@@ -4,7 +4,9 @@ import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.os.IBinder
+import androidx.media3.common.util.UnstableApi
 
+@UnstableApi
 class ServiceConnectionManager(private val context: Context) {
 
     private var playerService: PlayerService? = null
