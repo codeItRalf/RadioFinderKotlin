@@ -3,7 +3,6 @@ package com.example.radiofinder.ui.details
 import android.os.Bundle
 import android.view.MenuItem
 import android.view.View
-import android.widget.Button
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.ProgressBar
@@ -18,7 +17,9 @@ import androidx.media3.common.util.UnstableApi
 import com.example.radiofinder.R
 import com.example.radiofinder.data.model.RadioStation
 import com.example.radiofinder.data.model.StationCheck
+import com.example.radiofinder.services.PlayerService
 import com.example.radiofinder.services.ServiceConnectionManager
+import com.example.radiofinder.views.ExoVisualizer
 import com.squareup.picasso.Picasso
 
 @UnstableApi
@@ -37,7 +38,7 @@ class DetailsActivity : AppCompatActivity() {
     private lateinit var station: RadioStation
     private lateinit var viewModel: DetailsViewModel
     private lateinit var playButtonLoadingIndicator: ProgressBar
-
+    private var visualizer: ExoVisualizer? = null
     @OptIn(UnstableApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -96,6 +97,7 @@ class DetailsActivity : AppCompatActivity() {
         // Update this to bind other relevant stationCheck fields to views
     }
 
+
     override fun onStart() {
         super.onStart()
         serviceConnectionManager.bindService { playerService ->
@@ -105,6 +107,9 @@ class DetailsActivity : AppCompatActivity() {
             playerService?.isPlaying?.observe(this, Observer { playing ->
                 if (playing && playerService.getStation() == station) {
                     playButton.setImageResource(android.R.drawable.ic_media_pause)
+                    connectToAudioVisualization(playerService)
+
+
                 } else {
                     playButton.setImageResource(android.R.drawable.ic_media_play)
                 }
@@ -122,10 +127,15 @@ class DetailsActivity : AppCompatActivity() {
         }
     }
 
-    override fun onStop() {
-        super.onStop()
-        serviceConnectionManager.unbindService()
+    private fun connectToAudioVisualization(playerService: PlayerService?) {
+        if(visualizer != null) {
+            return;
+        }
+        visualizer = findViewById<ExoVisualizer>(R.id.visualizer)
+        visualizer?.processor = playerService?.getAudioProcessor()
+        visualizer?.updateProcessorListenerState(true)
     }
+
 
     private fun initViews() {
         stationImage = findViewById(R.id.stationImage)
@@ -155,6 +165,7 @@ class DetailsActivity : AppCompatActivity() {
     private fun setupPlayerControls(station: RadioStation) {
         playButton.setOnClickListener {
             serviceConnectionManager.getService()?.let {
+                connectToAudioVisualization(it)
                 it.playPause(station)
             }
 
@@ -164,5 +175,12 @@ class DetailsActivity : AppCompatActivity() {
     private fun showErrorAndClose(message: String) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
         finish() // Close the activity if the data is invalid
+    }
+
+
+
+    override fun onDestroy() {
+        super.onDestroy()
+        serviceConnectionManager.unbindService()
     }
 }

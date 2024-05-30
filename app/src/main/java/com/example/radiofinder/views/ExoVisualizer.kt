@@ -27,7 +27,6 @@ class ExoVisualizer @JvmOverloads constructor(
     }
 
      fun updateProcessorListenerState(enable: Boolean) {
-        Log.d("ExoVisualizer", "Updating processor listener state: $enable, processor is null: ${processor == null}, listener is null: ${processor?.listener == null}")
         if (enable) {
             processor?.listener = this
         } else {
@@ -41,7 +40,6 @@ class ExoVisualizer @JvmOverloads constructor(
     override fun onFFTReady(sampleRateHz: Int, channelCount: Int, fft: FloatArray) {
         currentWaveform = fft
         bandView.onFFT(fft)
-        Log.d("ExoVisualizer", "FFT data received: ${fft.contentToString()}")
     }
 
 }
