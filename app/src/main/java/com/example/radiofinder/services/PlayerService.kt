@@ -150,12 +150,9 @@ class PlayerService : Service() {
             try {
 
 
-                val mediaSource = ProgressiveMediaSource.Factory(
-                    DefaultDataSourceFactory(this, "ExoVisualizer")
-                ).createMediaSource(MediaItem.Builder().setUri(station.resolvedUrl!!).build())
-//                val mediaItem = MediaItem.fromUri(station.resolvedUrl!!)
-//                exoPlayer.setMediaItem(mediaItem)
-                exoPlayer.setMediaSource(mediaSource)
+          val mediaItem = MediaItem.fromUri(station.resolvedUrl!!)
+               exoPlayer.setMediaItem(mediaItem)
+
                 exoPlayer.prepare()
                 exoPlayer.play()
                 notificationHandler.updateNotification("Playing", true, _currentStation.value)
