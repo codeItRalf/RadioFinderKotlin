@@ -100,7 +100,7 @@ class PlayerService : Service() {
     }
 
 
-    private fun stopMedia() {
+     fun stopMedia() {
         exoPlayer.stop()
         stopForeground(true)
         stopSelf()
@@ -150,4 +150,6 @@ class PlayerService : Service() {
     fun getStation(): RadioStation? {
         return _currentStation.value
     }
+
+
 }

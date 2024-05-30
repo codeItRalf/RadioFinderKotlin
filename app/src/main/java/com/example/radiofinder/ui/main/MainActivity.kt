@@ -235,6 +235,10 @@ class MainActivity : AppCompatActivity() {
         playerService?.playPause(station)
     }
 
+    override fun onDestroy() {
+        serviceConnectionManager.getService()?.stopMedia();
+        super.onDestroy()
+    }
 
     override fun onStop() {
         super.onStop()
