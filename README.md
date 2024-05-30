@@ -4,7 +4,7 @@ This is a simple Radio Finder app designed to showcase skills in Android develop
 
 ## Features
 
-- **Two Main Pages**: Main and Detail
+- **Two Pages**: Main and Detail
 - **Player Accessibility**: Accessible from both Main and Detail pages
 - **Search Functionality**: Search for radio stations
 - **Background Playback**: Continue playing audio while the app is in the background
