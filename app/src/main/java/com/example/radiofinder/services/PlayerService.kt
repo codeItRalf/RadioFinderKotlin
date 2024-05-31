@@ -62,8 +62,9 @@ class PlayerService : Service() {
 
     private fun initializePlayer() {
         val context = this
-        val renderersFactory = createRenderersFactory(context)
-        exoPlayer = ExoPlayer.Builder(context, renderersFactory).build()
+       val renderersFactory = createRenderersFactory(context)
+       exoPlayer = ExoPlayer.Builder(context, renderersFactory).build()
+//        exoPlayer = ExoPlayer.Builder(context).build()
         exoPlayer.addListener(createPlayerListener())
     }
 
@@ -154,7 +155,6 @@ class PlayerService : Service() {
     fun stopMedia() {
         exoPlayer.stop()
         stopForeground(STOP_FOREGROUND_REMOVE)
-        stopSelf()
     }
 
     fun isPlaying(): Boolean {

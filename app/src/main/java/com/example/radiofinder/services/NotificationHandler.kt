@@ -23,18 +23,30 @@ class NotificationHandler(private val context: Context) {
     }
 
     @OptIn(UnstableApi::class)
-    fun createNotification(contentText: String, isPlaying: Boolean, currentStation: RadioStation?): Notification {
+    fun createNotification(
+        contentText: String,
+        isPlaying: Boolean,
+        currentStation: RadioStation?
+    ): Notification {
         val pendingIntent = createPendingIntent()
         val playPauseAction = createPlayPauseAction(isPlaying)
 
-        return NotificationCompat.Builder(context, channelId)
-            .setContentTitle(currentStation?.name ?: "")
-            .setContentText(contentText)
+        val notification = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(R.drawable.ic_music_note)
+            .setContentText(contentText)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)  // For pre-Oreo
+            .setCategory(NotificationCompat.CATEGORY_SERVICE)
+            .setContentTitle(currentStation?.name ?: "")
             .setContentIntent(pendingIntent)
-            .addAction(playPauseAction)
-            .setOngoing(isPlaying)
-            .build()
+
+        if (currentStation != null) {
+            notification.addAction(playPauseAction)
+                .setOngoing(isPlaying)
+                .setDeleteIntent(createDeleteIntent())
+
+        }
+
+        return notification.build()
     }
 
     @OptIn(UnstableApi::class)
@@ -61,12 +73,22 @@ class NotificationHandler(private val context: Context) {
         val actionIntent = Intent(context, PlayerService::class.java).apply {
             action = PlayerService.ACTION_PLAY_PAUSE
         }
-        val actionPendingIntent = PendingIntent.getService(context, 0, actionIntent, PendingIntent.FLAG_IMMUTABLE)
+        val actionPendingIntent =
+            PendingIntent.getService(context, 0, actionIntent, PendingIntent.FLAG_IMMUTABLE)
         return if (isPlaying) {
-            NotificationCompat.Action(android.R.drawable.ic_media_pause, "Pause", actionPendingIntent)
+            NotificationCompat.Action(R.drawable.ic_pause, "Pause", actionPendingIntent)
         } else {
-            NotificationCompat.Action(android.R.drawable.ic_media_play, "Play", actionPendingIntent)
+            NotificationCompat.Action(R.drawable.ic_play, "Play", actionPendingIntent)
         }
+    }
+
+
+    @OptIn(UnstableApi::class)
+    private fun createDeleteIntent(): PendingIntent {
+        val deleteIntent = Intent(context, PlayerService::class.java).apply {
+            action = PlayerService.ACTION_STOP
+        }
+        return PendingIntent.getService(context, 0, deleteIntent, PendingIntent.FLAG_IMMUTABLE)
     }
 
     private fun createNotificationChannel() {
@@ -74,7 +96,7 @@ class NotificationHandler(private val context: Context) {
             val channel = NotificationChannel(
                 channelId,
                 "Radio Service Channel",
-                NotificationManager.IMPORTANCE_LOW
+                NotificationManager.IMPORTANCE_HIGH  // Higher importance
             )
             val manager = context.getSystemService(NotificationManager::class.java)
             manager.createNotificationChannel(channel)
