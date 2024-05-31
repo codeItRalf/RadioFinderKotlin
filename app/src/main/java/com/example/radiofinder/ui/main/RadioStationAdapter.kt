@@ -1,5 +1,6 @@
 package com.example.radiofinder.ui.main
 
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -39,7 +40,12 @@ class RadioStationAdapter(
             descriptionTextView.text = station.country
             tagsTextView.text = station.tags
             if (!station.favicon.isNullOrBlank()) {
+                try {
                 Picasso.get().load(station.favicon).into(stationImageView)
+
+                }catch (e: Exception){
+                    Log.d("RadioStationAdapter", "Error loading image: ${e.message}")
+                }
             }
 
 
@@ -57,9 +63,11 @@ class RadioStationAdapter(
                 playButton.setImageResource(android.R.drawable.ic_media_play)
             }
             playButton.setOnClickListener {
+                Log.d("RadioStationAdapter", "Play button clicked")
                 onPlayClick(station)
             }
             itemView.setOnClickListener {
+                Log.d("RadioStationAdapter", "Station clicked")
                 clickListener(station)
             }
         }

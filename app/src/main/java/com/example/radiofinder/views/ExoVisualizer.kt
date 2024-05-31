@@ -2,6 +2,7 @@ package com.example.radiofinder.views
 
 import android.content.Context
 import android.util.AttributeSet
+import android.util.Log
 import android.widget.FrameLayout
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
@@ -23,8 +24,12 @@ class ExoVisualizer @JvmOverloads constructor(
     }
 
     fun updateProcessorListenerState(enable: Boolean) {
+        if (processor == null) return
+
         if (enable) {
-            processor?.listener = this
+            if (processor?.listener == null) {
+                processor?.listener = this
+            }
         } else {
             processor?.listener = null
             currentWaveform = null

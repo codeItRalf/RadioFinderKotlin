@@ -1,6 +1,9 @@
 package com.example.radiofinder.ui.details
 
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.util.Log
 import android.view.MenuItem
 import android.view.View
 import android.widget.ImageButton
@@ -135,8 +138,8 @@ class DetailsActivity : AppCompatActivity() {
 
     private fun setupPlayerControls(station: RadioStation) {
         playButton.setOnClickListener {
+            Log.d("DetailsActivity", "Play button clicked")
             serviceConnectionManager.getService()?.let {
-                connectToAudioVisualization(it)
                 it.playPause(station)
             }
         }
@@ -175,6 +178,18 @@ class DetailsActivity : AppCompatActivity() {
     private fun showErrorAndClose(message: String) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
         finish() // Close the activity if the data is invalid
+    }
+    override fun onResume() {
+        super.onResume()
+        Handler(Looper.getMainLooper()).postDelayed({
+            visualizer?.updateProcessorListenerState(true)
+        }, 100)
+    }
+
+
+    override fun onPause() {
+        super.onPause()
+        visualizer?.updateProcessorListenerState(false)
     }
 
     override fun onDestroy() {

@@ -6,6 +6,8 @@ import android.graphics.PorterDuffColorFilter
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.StrictMode
+import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
@@ -52,6 +54,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+
         setContentView(R.layout.activity_main)
 
         // Initialize the ServiceConnectionManager
@@ -82,9 +86,11 @@ class MainActivity : AppCompatActivity() {
     private fun setupFloatingController() {
         // Set play/pause button click listener
         controllerPlayPauseButton.setOnClickListener {
+            Log.d("MainActivity", "Play/Pause button clicked")
             playPause(null)
         }
         floatingController.setOnClickListener {
+            Log.d("MainActivity", "Floating controller clicked")
             serviceConnectionManager.getService()?.getStation()?.let {
                 openStationDetails(it)
             }
@@ -203,7 +209,12 @@ class MainActivity : AppCompatActivity() {
     private fun updateControllerUI(currentStation: RadioStation?, isPlaying: Boolean) {
         if (currentStation != null) {
             if (!currentStation.favicon.isNullOrBlank()) {
+                try {
                 Picasso.get().load(currentStation.favicon).into(controllerImage)
+
+                }catch (e: Exception){
+                    Log.e("MainActivity", "Error loading image", e)
+                }
             }
 
             controllerStationName.text = currentStation.name
@@ -272,6 +283,7 @@ class MainActivity : AppCompatActivity() {
         playerService?.playPause(station)
     }
 
+
     override fun onDestroy() {
         serviceConnectionManager.getService()?.stopMedia();
         serviceConnectionManager.unbindService()
@@ -280,9 +292,15 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        visualizer?.updateProcessorListenerState(true)
+        Handler(Looper.getMainLooper()).postDelayed({
+            visualizer?.updateProcessorListenerState(true)
+        }, 100)
     }
 
 
+    override fun onPause() {
+        super.onPause()
 
+        visualizer?.updateProcessorListenerState(false)
+    }
 }

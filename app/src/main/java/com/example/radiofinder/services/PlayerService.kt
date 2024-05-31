@@ -55,8 +55,9 @@ class PlayerService : Service() {
     }
 
     override fun onDestroy() {
-        super.onDestroy()
+        exoPlayer.removeListener(createPlayerListener())
         exoPlayer.release()
+        super.onDestroy()
     }
 
     private fun initializePlayer() {
@@ -193,4 +194,6 @@ class PlayerService : Service() {
     fun getAudioProcessor(): FFTAudioProcessor {
         return _fftAudioProcessor
     }
+
+
 }
