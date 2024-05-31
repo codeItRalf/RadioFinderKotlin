@@ -2,15 +2,11 @@ package com.example.radiofinder.views
 
 import android.content.Context
 import android.util.AttributeSet
-import android.util.Log
 import android.widget.FrameLayout
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import com.example.radiofinder.services.FFTAudioProcessor
 
-/**
- * The visualizer is a view which listens to the FFT changes and forwards it to the band view.
- */
 @UnstableApi
 class ExoVisualizer @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
@@ -26,7 +22,7 @@ class ExoVisualizer @JvmOverloads constructor(
         addView(bandView, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
     }
 
-     fun updateProcessorListenerState(enable: Boolean) {
+    fun updateProcessorListenerState(enable: Boolean) {
         if (enable) {
             processor?.listener = this
         } else {
@@ -35,11 +31,12 @@ class ExoVisualizer @JvmOverloads constructor(
         }
     }
 
-
+    fun setColor(fillColor: Int, bandsColor: Int, avgColor: Int, pathColor: Int) {
+        bandView.setColor(fillColor, bandsColor, avgColor, pathColor)
+    }
 
     override fun onFFTReady(sampleRateHz: Int, channelCount: Int, fft: FloatArray) {
         currentWaveform = fft
         bandView.onFFT(fft)
     }
-
 }

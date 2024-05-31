@@ -7,4 +7,6 @@
     <color name="dark_gray">#121212</color>
     <color name="white">#FFFFFF</color>
     <color name="neon_blue_dark">#008B8B</color>
+    <color name="white_alpha_50">#65FFFFFF</color>
+
 </resources>
