@@ -2,6 +2,7 @@ package com.example.radiofinder.services
 
 import android.media.AudioRecord.ERROR_BAD_VALUE
 import android.media.AudioTrack
+import android.util.Log
 import androidx.annotation.OptIn
 import androidx.media3.common.C
 import androidx.media3.common.Format
@@ -9,13 +10,18 @@ import androidx.media3.common.audio.AudioProcessor
 import androidx.media3.common.util.Assertions
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.common.util.Util
-import com.paramsen.noise.Noise
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import kotlin.math.max
+import com.paramsen.noise.Noise
+
+
+/**
+ * An audio processor which forwards the input to the output,
+ * but also takes the input and executes a Fast-Fourier Transformation (FFT) on it.
+ * The results of this transformation is a 'list' of frequencies with their amplitudes,
+ * which will be forwarded to the listener
+ */
 
 @UnstableApi
 class FFTAudioProcessor : AudioProcessor {
@@ -56,7 +62,6 @@ class FFTAudioProcessor : AudioProcessor {
     private val src = FloatArray(SAMPLE_SIZE)
     private val dst = FloatArray(SAMPLE_SIZE + 2)
 
-    private val scope = CoroutineScope(Dispatchers.Default + Job())
 
     interface FFTListener {
         fun onFFTReady(sampleRateHz: Int, channelCount: Int, fft: FloatArray)
@@ -68,6 +73,13 @@ class FFTAudioProcessor : AudioProcessor {
         outputBuffer = AudioProcessor.EMPTY_BUFFER
     }
 
+    /**
+     * The following method matches the implementation of getDefaultBufferSize in DefaultAudioSink
+     * of ExoPlayer.
+     * Because there is an AudioTrack buffer between the processor and the sound output, the processor receives everything early.
+     * By putting the audio data to process in a buffer which has the same size as the audiotrack buffer,
+     * we will delay ourselves to match the audio output.
+     */
     @OptIn(UnstableApi::class)
     private fun getDefaultBufferSizeInBytes(audioFormat: AudioProcessor.AudioFormat): Int {
         val outputPcmFrameSize = Util.getPcmFrameSize(audioFormat.encoding, audioFormat.channelCount)
@@ -102,7 +114,7 @@ class FFTAudioProcessor : AudioProcessor {
         return isActive
     }
 
-    private lateinit var inputAudioFormat: AudioProcessor.AudioFormat
+    private lateinit var inputAudioFormat :AudioProcessor.AudioFormat
 
     override fun configure(inputAudioFormat: AudioProcessor.AudioFormat): AudioProcessor.AudioFormat {
         if (inputAudioFormat.encoding != C.ENCODING_PCM_16BIT) {
@@ -117,23 +129,18 @@ class FFTAudioProcessor : AudioProcessor {
 
         audioTrackBufferSize = getDefaultBufferSizeInBytes(inputAudioFormat)
 
-        srcBuffer = ByteBuffer.allocate(audioTrackBufferSize + BUFFER_EXTRA_SIZE).order(ByteOrder.nativeOrder())
+        srcBuffer = ByteBuffer.allocate(audioTrackBufferSize + BUFFER_EXTRA_SIZE)
 
         return inputAudioFormat
     }
 
     override fun queueInput(inputBuffer: ByteBuffer) {
-        synchronized(this) {
-            processInputBuffer(inputBuffer)
-        }
-    }
-
-    private fun processInputBuffer(inputBuffer: ByteBuffer) {
         var position = inputBuffer.position()
         val limit = inputBuffer.limit()
         val frameCount = (limit - position) / (2 * inputAudioFormat.channelCount)
         val singleChannelOutputSize = frameCount * 2
         val outputSize = frameCount * inputAudioFormat.channelCount * 2
+
 
         if (processBuffer.capacity() < outputSize) {
             processBuffer = ByteBuffer.allocateDirect(outputSize).order(ByteOrder.nativeOrder())
@@ -152,58 +159,58 @@ class FFTAudioProcessor : AudioProcessor {
             var summedUp = 0
             for (channelIndex in 0 until inputAudioFormat.channelCount) {
                 val current = inputBuffer.getShort(position + 2 * channelIndex)
-                if (processBuffer.remaining() >= 2) {
-                    processBuffer.putShort(current)
-                }
+                processBuffer.putShort(current)
                 summedUp += current
             }
-            if (fftBuffer.remaining() >= 2) {
-                fftBuffer.putShort((summedUp / inputAudioFormat.channelCount).toShort())
-            }
+            // For the FFT, we use an currentAverage of all the channels
+            fftBuffer.putShort((summedUp / inputAudioFormat.channelCount).toShort())
             position += inputAudioFormat.channelCount * 2
         }
 
         inputBuffer.position(limit)
 
-        processFFT(fftBuffer)
+        processFFT(this.fftBuffer)
 
         processBuffer.flip()
-        outputBuffer = processBuffer
+        outputBuffer = this.processBuffer
     }
 
     private fun processFFT(buffer: ByteBuffer) {
+        Log.d("FFTAudioProcessor", "Processing FFT data, listener is null: ${listener == null}")
         if (listener == null) {
             return
         }
-        synchronized(this) {
-            val bufferArray = ByteArray(buffer.remaining())
-            buffer.get(bufferArray)
-            srcBuffer.put(bufferArray)
-            srcBufferPosition += bufferArray.size
-            val bytesToProcess = SAMPLE_SIZE * 2
-            var currentByte: Byte? = null
-            while (srcBufferPosition > bytesToProcess) {
-                srcBuffer.position(0)
-                srcBuffer.get(tempByteArray, 0, bytesToProcess)
+        srcBuffer.put(buffer.array())
+        srcBufferPosition += buffer.array().size
+        // Since this is PCM 16 bit, each sample will be 2 bytes.
+        // So to get the sample size in the end, we need to take twice as many bytes off the buffer
+        val bytesToProcess = SAMPLE_SIZE * 2
+        var currentByte: Byte? = null
+        while (srcBufferPosition > audioTrackBufferSize) {
+            srcBuffer.position(0)
+            srcBuffer.get(tempByteArray, 0, bytesToProcess)
 
-                tempByteArray.forEachIndexed { index, byte ->
-                    if (currentByte == null) {
-                        currentByte = byte
-                    } else {
-                        src[index / 2] =
-                            (currentByte!!.toFloat() * Byte.MAX_VALUE + byte) / (Byte.MAX_VALUE * Byte.MAX_VALUE)
-                        dst[index / 2] = 0f
-                        currentByte = null
-                    }
+            tempByteArray.forEachIndexed { index, byte ->
+                if (currentByte == null) {
+                    currentByte = byte
+                } else {
+                    src[index / 2] =
+                        (currentByte!!.toFloat() * Byte.MAX_VALUE + byte) / (Byte.MAX_VALUE * Byte.MAX_VALUE)
+                    dst[index / 2] = 0f
+                    currentByte = null
                 }
-                srcBuffer.position(bytesToProcess)
-                srcBuffer.compact()
-                srcBufferPosition -= bytesToProcess
-                srcBuffer.position(srcBufferPosition)
 
-                val fft = noise?.fft(src, dst) ?: return
-                listener?.onFFTReady(inputAudioFormat.sampleRate, inputAudioFormat.channelCount, fft)
             }
+            srcBuffer.position(bytesToProcess)
+            srcBuffer.compact()
+            srcBufferPosition -= bytesToProcess
+            srcBuffer.position(srcBufferPosition)
+
+            // Log FFT data for debugging
+            Log.d("FFTAudioProcessor", "Processed FFT data: ${src.contentToString()}")
+
+            val fft = noise?.fft(src, dst)!!
+            listener?.onFFTReady(inputAudioFormat.sampleRate, inputAudioFormat.channelCount, fft)
         }
     }
 
@@ -225,14 +232,12 @@ class FFTAudioProcessor : AudioProcessor {
     override fun flush() {
         outputBuffer = AudioProcessor.EMPTY_BUFFER
         inputEnded = false
+        // A new stream is incoming.
     }
 
     override fun reset() {
         flush()
         processBuffer = AudioProcessor.EMPTY_BUFFER
-        inputAudioFormat = AudioProcessor.AudioFormat(Format.NO_VALUE, Format.NO_VALUE, Format.NO_VALUE)
-        srcBufferPosition = 0
-        srcBuffer.clear()
-        noise = null
+        inputAudioFormat = AudioProcessor.AudioFormat(Format.NO_VALUE,Format.NO_VALUE,Format.NO_VALUE)
     }
 }
