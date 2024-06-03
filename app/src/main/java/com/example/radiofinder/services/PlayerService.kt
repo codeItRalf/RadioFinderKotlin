@@ -112,7 +112,7 @@ class PlayerService : MediaSessionService() {
             }
 
             override fun getCurrentContentText(player: Player): String? {
-                return if (player.isPlaying)  "Playing" else "Paused"
+                return if (player.isPlaying) "Playing" else "Paused"
             }
 
             override fun getCurrentLargeIcon(
@@ -159,7 +159,7 @@ class PlayerService : MediaSessionService() {
                         notificationId: Int,
                         dismissedByUser: Boolean
                     ) {
-                       stopMedia()
+                        stopMedia()
                     }
                 })
 
@@ -167,7 +167,6 @@ class PlayerService : MediaSessionService() {
 
         playerNotificationManager.setPlayer(exoPlayer)
     }
-
 
 
     private fun initializePlayer() {
@@ -286,16 +285,17 @@ class PlayerService : MediaSessionService() {
             exoPlayer.play()
         } catch (e: Exception) {
             Log.e("PlayerService", "Error playing station", e)
-            exoPlayer.stop()
-            _currentStation.value = null
+            stopMedia()
             Toast.makeText(this, e.message, Toast.LENGTH_SHORT).show()
         }
     }
 
     fun stopMedia() {
         exoPlayer.stop()
-        stopForeground(STOP_FOREGROUND_REMOVE)
-        _isInForeground = false
+        if (_isInForeground) {
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            _isInForeground = false
+        }
         _currentStation.value = null
     }
 
