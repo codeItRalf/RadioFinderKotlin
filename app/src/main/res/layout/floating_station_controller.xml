@@ -30,7 +30,10 @@
         android:text="Station Name"
         android:textColor="@color/white"
         android:textSize="16sp"
-        android:textStyle="bold" />
+        android:textStyle="bold"
+        android:ellipsize="end"
+        android:singleLine="true"
+        />
 
     <ImageButton
         android:id="@+id/controller_play_pause_button"

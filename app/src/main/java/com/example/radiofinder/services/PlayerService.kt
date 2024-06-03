@@ -1,50 +1,36 @@
 package com.example.radiofinder.services
 
-import android.app.Notification
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.PendingIntent
-import android.content.ComponentName
-import android.content.Context
 import android.content.Intent
-import android.graphics.Bitmap
-import android.graphics.drawable.Drawable
 import android.os.Binder
-import android.os.Build
-import android.os.Handler
 import android.os.IBinder
 import android.util.Log
 import android.widget.Toast
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.media3.common.MediaItem
-import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.exoplayer.Renderer
-import androidx.media3.exoplayer.audio.AudioRendererEventListener
-import androidx.media3.exoplayer.audio.AudioSink
-import androidx.media3.exoplayer.audio.DefaultAudioSink
-import androidx.media3.exoplayer.audio.MediaCodecAudioRenderer
-import androidx.media3.exoplayer.mediacodec.MediaCodecSelector
-import androidx.media3.session.MediaController
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
-import androidx.media3.session.SessionToken
-import androidx.media3.ui.PlayerNotificationManager
 import com.example.radiofinder.data.model.RadioStation
-import com.example.radiofinder.ui.main.MainActivity
-import com.squareup.picasso.Picasso
+import com.example.radiofinder.notifications.PlayerNotificationManagerWrapper
+import com.example.radiofinder.utils.PlayerInitializer
 
 @UnstableApi
 class PlayerService : MediaSessionService() {
-    private lateinit var playerNotificationManager: PlayerNotificationManager
+
+    // Binder given to clients
     private val binder = PlayerBinder()
+
+    // Media session and player
     private var mediaSession: MediaSession? = null
     private lateinit var exoPlayer: ExoPlayer
+
+    // Notification manager
+    private lateinit var playerNotificationManagerWrapper: PlayerNotificationManagerWrapper
+
+    // LiveData for current station, loading and playing state
     private val _currentStation = MutableLiveData<RadioStation?>()
     val currentStation: LiveData<RadioStation?> get() = _currentStation
 
@@ -53,16 +39,20 @@ class PlayerService : MediaSessionService() {
 
     private val _isPlaying = MutableLiveData<Boolean>()
     val isPlaying: LiveData<Boolean> get() = _isPlaying
+
+    // Audio processor for visualization
     private val _fftAudioProcessor = FFTAudioProcessor()
-    private var _isInForeground = false;
 
     override fun onCreate() {
         super.onCreate()
-        createNotificationChannel()
         initializePlayer()
-        initializeNotificationManager()
+        playerNotificationManagerWrapper = PlayerNotificationManagerWrapper(
+            this,
+            exoPlayer,
+            { _currentStation.value },
+            { stopMedia() }
+        )
     }
-
 
     override fun onBind(intent: Intent?): IBinder {
         super.onBind(intent)
@@ -70,19 +60,14 @@ class PlayerService : MediaSessionService() {
     }
 
     override fun onTaskRemoved(rootIntent: Intent?) {
-        val player = mediaSession?.player!!
-        if (!player.playWhenReady
-            || player.mediaItemCount == 0
-            || player.playbackState == Player.STATE_ENDED
-        ) {
-            // Stop the service if not playing, continue playing in the background
-            // otherwise.
-            stopSelf()
+        mediaSession?.player?.let { player ->
+            if (!player.playWhenReady || player.mediaItemCount == 0 || player.playbackState == Player.STATE_ENDED) {
+                stopSelf()
+            }
         }
     }
 
-    override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? =
-        mediaSession
+    override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = mediaSession
 
     override fun onDestroy() {
         mediaSession?.run {
@@ -94,165 +79,14 @@ class PlayerService : MediaSessionService() {
         super.onDestroy()
     }
 
-    private fun initializeNotificationManager() {
-        val context = this
-        val mediaDescriptionAdapter = object : PlayerNotificationManager.MediaDescriptionAdapter {
-            override fun getCurrentContentTitle(player: Player): String {
-                return _currentStation.value?.name ?: "Unknown Station"
-            }
-
-            override fun createCurrentContentIntent(player: Player): PendingIntent? {
-                val intent = Intent(context, MainActivity::class.java)
-                return PendingIntent.getActivity(
-                    context,
-                    0,
-                    intent,
-                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                )
-            }
-
-            override fun getCurrentContentText(player: Player): String? {
-                return if (player.isPlaying) "Playing" else "Paused"
-            }
-
-            override fun getCurrentLargeIcon(
-                player: Player,
-                callback: PlayerNotificationManager.BitmapCallback
-            ): Bitmap? {
-                val faviconUrl = _currentStation.value?.favicon
-                if (faviconUrl != null) {
-                    Picasso.get()
-                        .load(faviconUrl)
-                        .into(object : com.squareup.picasso.Target {
-                            override fun onBitmapLoaded(bitmap: Bitmap, from: Picasso.LoadedFrom) {
-                                callback.onBitmap(bitmap)
-                            }
-
-                            override fun onBitmapFailed(e: Exception, errorDrawable: Drawable?) {
-                            }
-
-                            override fun onPrepareLoad(placeHolderDrawable: Drawable?) {
-
-                            }
-                        })
-                }
-                return null
-            }
-        }
-
-        playerNotificationManager =
-            PlayerNotificationManager.Builder(context, NOTIFICATION_ID, CHANNEL_ID)
-                .setMediaDescriptionAdapter(mediaDescriptionAdapter)
-                .setNotificationListener(object : PlayerNotificationManager.NotificationListener {
-                    override fun onNotificationPosted(
-                        notificationId: Int,
-                        notification: Notification,
-                        ongoing: Boolean
-                    ) {
-                        if (ongoing && !_isInForeground && _currentStation.value != null) {
-                            startForeground(notificationId, notification)
-                            _isInForeground = true
-                        }
-                    }
-
-                    override fun onNotificationCancelled(
-                        notificationId: Int,
-                        dismissedByUser: Boolean
-                    ) {
-                        stopMedia()
-                    }
-                })
-
-                .build()
-
-        playerNotificationManager.setPlayer(exoPlayer)
-    }
-
-
     private fun initializePlayer() {
-        val context = this
-        val sessionToken =
-            SessionToken(context, ComponentName(context, PlayerService::class.java))
-        val renderersFactory = createRenderersFactory(context)
-        exoPlayer = ExoPlayer.Builder(context, renderersFactory).build()
-        mediaSession = MediaSession.Builder(this, exoPlayer).build()
-        exoPlayer.addListener(createPlayerListener())
-        val controllerFuture =
-            MediaController.Builder(context, sessionToken).buildAsync()
-        controllerFuture.addListener({
-            val mediaController = controllerFuture.get()
-            val mediaItem =
-                MediaItem.Builder()
-                    .setMediaId(_currentStation.value?.stationUuid ?: "")
-                    .setMediaMetadata(
-                        MediaMetadata.Builder()
-                            .setArtist(_currentStation.value?.name ?: "")
-                            .build()
-                    )
-                    .build()
-            mediaController.setMediaItem(mediaItem)
-        }, ContextCompat.getMainExecutor(context))
-
-    }
-
-
-    private fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val serviceChannel = NotificationChannel(
-                CHANNEL_ID,
-                "Media Playback",
-                NotificationManager.IMPORTANCE_LOW
-            )
-            val manager = getSystemService(NotificationManager::class.java)
-            manager.createNotificationChannel(serviceChannel)
+        PlayerInitializer.initializePlayer(this, this, { _currentStation.value }) { exoPlayer, mediaSession ->
+            this.exoPlayer = exoPlayer
+            this.mediaSession = mediaSession
         }
     }
 
-    private fun createRenderersFactory(context: Context): DefaultRenderersFactory {
-        return object : DefaultRenderersFactory(context) {
-            override fun buildAudioRenderers(
-                context: Context,
-                extensionRendererMode: Int,
-                mediaCodecSelector: MediaCodecSelector,
-                enableDecoderFallback: Boolean,
-                audioSink: AudioSink,
-                eventHandler: Handler,
-                eventListener: AudioRendererEventListener,
-                out: ArrayList<Renderer>
-            ) {
-                val audioProcessorChain =
-                    DefaultAudioSink.DefaultAudioProcessorChain(_fftAudioProcessor)
-                val defaultAudioSink = DefaultAudioSink.Builder()
-                    .setAudioProcessorChain(audioProcessorChain)
-                    .build()
-
-                out.add(
-                    MediaCodecAudioRenderer(
-                        context,
-                        mediaCodecSelector,
-                        enableDecoderFallback,
-                        eventHandler,
-                        eventListener,
-                        defaultAudioSink
-                    )
-                )
-
-                super.buildAudioRenderers(
-                    context,
-                    extensionRendererMode,
-                    mediaCodecSelector,
-                    enableDecoderFallback,
-                    audioSink,
-                    eventHandler,
-                    eventListener,
-                    out
-                )
-            }
-        }
-    }
-
-
-    private fun createPlayerListener(): Player.Listener {
+    fun createPlayerListener(): Player.Listener {
         return object : Player.Listener {
             override fun onIsPlayingChanged(isPlaying: Boolean) {
                 _isPlaying.postValue(isPlaying)
@@ -292,9 +126,9 @@ class PlayerService : MediaSessionService() {
 
     fun stopMedia() {
         exoPlayer.stop()
-        if (_isInForeground) {
+        if(playerNotificationManagerWrapper.isInForeground){
             stopForeground(STOP_FOREGROUND_REMOVE)
-            _isInForeground = false
+            playerNotificationManagerWrapper.isInForeground = false
         }
         _currentStation.value = null
     }
@@ -303,26 +137,18 @@ class PlayerService : MediaSessionService() {
         return exoPlayer.isPlaying
     }
 
-    fun setVolume(volume: Float) {
-        exoPlayer.volume = volume
-    }
-
+    // Binder class to return the service instance to clients
     inner class PlayerBinder : Binder() {
         val service: PlayerService
             get() = this@PlayerService
     }
 
-
+    // Accessor methods for LiveData
     fun getStation(): RadioStation? {
         return _currentStation.value
     }
 
     fun getAudioProcessor(): FFTAudioProcessor {
         return _fftAudioProcessor
-    }
-
-    companion object {
-        private const val CHANNEL_ID = "media_playback_channel"
-        private const val NOTIFICATION_ID = 1
     }
 }
