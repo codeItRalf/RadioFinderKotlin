@@ -176,6 +176,7 @@ class FFTAudioProcessor : AudioProcessor {
     }
 
     private fun processFFT(buffer: ByteBuffer) {
+        Log.d("FFTAudioProcessor", "Processing FFT data, listener is null: ${listener == null}")
         if (listener == null) {
             return
         }
@@ -205,6 +206,8 @@ class FFTAudioProcessor : AudioProcessor {
             srcBufferPosition -= bytesToProcess
             srcBuffer.position(srcBufferPosition)
 
+            // Log FFT data for debugging
+            Log.d("FFTAudioProcessor", "Processed FFT data: ${src.contentToString()}")
 
             val fft = noise?.fft(src, dst)!!
             listener?.onFFTReady(inputAudioFormat.sampleRate, inputAudioFormat.channelCount, fft)

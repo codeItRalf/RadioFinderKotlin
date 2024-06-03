@@ -20,12 +20,7 @@
 
     </androidx.appcompat.widget.Toolbar>
 
-    <com.example.radiofinder.views.ExoVisualizer
-        android:id="@+id/visualizer"
-        android:layout_width="match_parent"
-        app:layout_constraintTop_toBottomOf="@id/toolbar"
-        app:layout_constraintBottom_toBottomOf="parent"
-        android:layout_height="match_parent" />
+
 
 
     <ProgressBar
@@ -124,14 +119,14 @@
 
     <ImageButton
         android:id="@+id/playButton"
+        style="@style/CircularImageButton"
         android:layout_width="100dp"
         android:layout_height="100dp"
         android:layout_marginTop="16dp"
         android:src="@android:drawable/ic_media_play"
-        style="@style/CircularImageButton"
-        app:layout_constraintTop_toBottomOf="@id/stationVotes"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintTop_toBottomOf="@id/stationVotes" />
 
     <ProgressBar
         android:id="@+id/playButtonLoadingIndicator"
@@ -144,5 +139,18 @@
         app:layout_constraintTop_toBottomOf="@id/stationVotes"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
+
+
+    <com.example.radiofinder.views.ExoVisualizer
+        android:id="@+id/visualizer"
+        android:layout_width="380dp"
+        android:layout_height="211dp"
+        android:paddingTop="25dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/playButton"
+        app:layout_constraintVertical_bias="1.0" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
