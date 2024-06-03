@@ -40,14 +40,12 @@ class PlayerService : Service() {
     val isPlaying: LiveData<Boolean> get() = _isPlaying
     private val _fftAudioProcessor = FFTAudioProcessor()
 
+    private var _isInForeground = false;
+
     override fun onCreate() {
         super.onCreate()
         notificationHandler = NotificationHandler(this)
         initializePlayer()
-        startForeground(
-            NOTIFICATION_ID,
-            notificationHandler.createNotification("Radio Player", false, _currentStation.value)
-        )
     }
 
     override fun onBind(intent: Intent?): IBinder {
@@ -62,11 +60,12 @@ class PlayerService : Service() {
 
     private fun initializePlayer() {
         val context = this
-       val renderersFactory = createRenderersFactory(context)
-       exoPlayer = ExoPlayer.Builder(context, renderersFactory).build()
+        val renderersFactory = createRenderersFactory(context)
+        exoPlayer = ExoPlayer.Builder(context, renderersFactory).build()
 //        exoPlayer = ExoPlayer.Builder(context).build()
         exoPlayer.addListener(createPlayerListener())
     }
+
 
     private fun createRenderersFactory(context: Context): DefaultRenderersFactory {
         return object : DefaultRenderersFactory(context) {
@@ -80,7 +79,8 @@ class PlayerService : Service() {
                 eventListener: AudioRendererEventListener,
                 out: ArrayList<Renderer>
             ) {
-                val audioProcessorChain = DefaultAudioSink.DefaultAudioProcessorChain(_fftAudioProcessor)
+                val audioProcessorChain =
+                    DefaultAudioSink.DefaultAudioProcessorChain(_fftAudioProcessor)
                 val defaultAudioSink = DefaultAudioSink.Builder()
                     .setAudioProcessorChain(audioProcessorChain)
                     .build()
@@ -110,10 +110,28 @@ class PlayerService : Service() {
         }
     }
 
+
+    private fun notificationHandler(isPlaying: Boolean, currentStation: RadioStation?) {
+        Log.d("PlayerService", "notificationHandler: isPlaying: $isPlaying, currentStation: $currentStation")
+
+        if (_isInForeground) {
+            notificationHandler.updateNotification(isPlaying.let {
+                if (it) "Playing" else "Paused"
+            }, isPlaying, currentStation)
+        } else {
+            startForeground(
+                NOTIFICATION_ID,
+                notificationHandler.createNotification("Radio Player", isPlaying, currentStation)
+            )
+            _isInForeground = true
+        }
+    }
+
     private fun createPlayerListener(): Player.Listener {
         return object : Player.Listener {
             override fun onIsPlayingChanged(isPlaying: Boolean) {
                 _isPlaying.postValue(isPlaying)
+                notificationHandler(isPlaying, _currentStation.value)
             }
 
             override fun onPlaybackStateChanged(playbackState: Int) {
@@ -126,10 +144,8 @@ class PlayerService : Service() {
         if (station == null || station == _currentStation.value) {
             if (_isPlaying.value == true) {
                 exoPlayer.pause()
-                notificationHandler.updateNotification("Paused", false, _currentStation.value)
             } else {
                 exoPlayer.play()
-                notificationHandler.updateNotification("Playing", true, _currentStation.value)
             }
         } else {
             playNewStation(station)
@@ -143,7 +159,6 @@ class PlayerService : Service() {
             exoPlayer.setMediaItem(mediaItem)
             exoPlayer.prepare()
             exoPlayer.play()
-            notificationHandler.updateNotification("Playing", true, _currentStation.value)
         } catch (e: Exception) {
             Log.e("PlayerService", "Error playing station", e)
             exoPlayer.stop()
@@ -155,6 +170,8 @@ class PlayerService : Service() {
     fun stopMedia() {
         exoPlayer.stop()
         stopForeground(STOP_FOREGROUND_REMOVE)
+        _isInForeground = false
+        _currentStation.value = null
     }
 
     fun isPlaying(): Boolean {

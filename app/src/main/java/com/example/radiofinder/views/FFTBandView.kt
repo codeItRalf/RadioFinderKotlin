@@ -142,13 +142,13 @@ class FFTBandView @JvmOverloads constructor(
                 startedAt = System.currentTimeMillis()
             }
             arraycopy(fft, 2, this.fft, 0, size)
-            invalidate()
+            postInvalidate()
         }
     }
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         drawAudio(canvas)
-        invalidate()
+        postInvalidate()
     }
 }
