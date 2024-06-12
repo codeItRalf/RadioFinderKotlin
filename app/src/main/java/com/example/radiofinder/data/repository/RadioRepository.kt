@@ -3,19 +3,26 @@ package com.example.radiofinder.data.repository
 import android.util.Log
 import com.example.radiofinder.data.model.RadioStation
 import com.example.radiofinder.data.model.StationCheck
+import com.example.radiofinder.network.UserAgentInterceptor
 import com.example.radiofinder.services.RadioService
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
 
 class RadioRepository private constructor() {
 
     private val radioService: RadioService
 
     init {
+        val okHttpClient = OkHttpClient.Builder()
+            .addInterceptor(UserAgentInterceptor())
+            .build()
+
         val retrofit = Retrofit.Builder()
             .baseUrl("http://at1.api.radio-browser.info/json/")
+            .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
 

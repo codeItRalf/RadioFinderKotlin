@@ -6,7 +6,6 @@ import android.graphics.PorterDuffColorFilter
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.os.StrictMode
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
@@ -28,6 +27,7 @@ import com.example.radiofinder.data.repository.RadioRepository
 import com.example.radiofinder.services.PlayerService
 import com.example.radiofinder.services.ServiceConnectionManager
 import com.example.radiofinder.ui.details.DetailsActivity
+import com.example.radiofinder.utils.AppInfo
 import com.example.radiofinder.viewmodel.RadioViewModel
 import com.example.radiofinder.views.ExoVisualizer
 import com.squareup.picasso.Picasso
@@ -54,7 +54,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
+        AppInfo.init(this)
 
         setContentView(R.layout.activity_main)
 
