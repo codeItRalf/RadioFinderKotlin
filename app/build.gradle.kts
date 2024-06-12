@@ -10,7 +10,7 @@ android {
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.example.radiofinder"
+        applicationId = "app.codeitralf.radiofinder"
         minSdk = 24
         targetSdk = 34
         versionCode = 1
