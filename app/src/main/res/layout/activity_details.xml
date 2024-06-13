@@ -141,7 +141,7 @@
         app:layout_constraintEnd_toEndOf="parent" />
 
 
-    <com.example.radiofinder.views.ExoVisualizer
+    <app.codeitralf.radiofinder.views.ExoVisualizer
         android:id="@+id/visualizer"
         android:layout_width="380dp"
         android:layout_height="211dp"
