@@ -10,12 +10,14 @@ import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
 import android.os.Build
 import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaSessionService
 import androidx.media3.ui.PlayerNotificationManager
 import app.codeitralf.radiofinder.data.model.RadioStation
 import app.codeitralf.radiofinder.ui.main.MainActivity
 import com.squareup.picasso.Picasso
 
+@UnstableApi
 class PlayerNotificationManagerWrapper(
     private val context: Context,
     private val exoPlayer: Player,
