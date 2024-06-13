@@ -5,7 +5,7 @@
     android:elevation="8dp"
     android:padding="8dp">
 
-    <com.example.radiofinder.views.ExoVisualizer
+    <app.codeitralf.radiofinder.views.ExoVisualizer
         android:id="@+id/visualizer"
         android:layout_width="match_parent"
         android:layout_height="100dp" />

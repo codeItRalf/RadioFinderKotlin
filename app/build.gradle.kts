@@ -6,7 +6,7 @@ plugins {
 
 
 android {
-    namespace = "com.example.radiofinder"
+    namespace = "app.codeitralf.radiofinder"
     compileSdk = 34
 
     defaultConfig {
