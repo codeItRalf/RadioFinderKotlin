@@ -30,14 +30,28 @@ class PlayerNotificationManagerWrapper(
     init {
         createNotificationChannel()
         initializeNotificationManager()
+        initForegroundService()
     }
+
+    private fun initForegroundService() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val intent = Intent(context, MediaSessionService::class.java)
+            context.startForegroundService(intent)
+            val notification = Notification.Builder(context, CHANNEL_ID)
+                .setContentTitle("Radio Finder")
+                .setContentText("Select a station to start playing")
+                .build()
+            startForeground(NOTIFICATION_ID,notification )
+        }
+    }
+
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val serviceChannel = NotificationChannel(
                 CHANNEL_ID,
                 "Media Playback",
-                NotificationManager.IMPORTANCE_LOW
+                NotificationManager.IMPORTANCE_LOW,
             )
             val manager = context.getSystemService(NotificationManager::class.java)
             manager.createNotificationChannel(serviceChannel)
@@ -64,6 +78,8 @@ class PlayerNotificationManagerWrapper(
                 return if (player.isPlaying) "Playing" else "Paused"
             }
 
+
+
             override fun getCurrentLargeIcon(
                 player: Player,
                 callback: PlayerNotificationManager.BitmapCallback
@@ -89,19 +105,21 @@ class PlayerNotificationManagerWrapper(
             }
         }
 
+
+
         playerNotificationManager =
             PlayerNotificationManager.Builder(context, NOTIFICATION_ID, CHANNEL_ID)
                 .setMediaDescriptionAdapter(mediaDescriptionAdapter)
                 .setNotificationListener(object : PlayerNotificationManager.NotificationListener {
+
+
                     override fun onNotificationPosted(
                         notificationId: Int,
                         notification: Notification,
                         ongoing: Boolean
                     ) {
-                        if (ongoing && !isInForeground && getCurrentStation() != null) {
-                            startForeground(notificationId, notification)
-                            isInForeground = true
-                        }
+
+                        startForeground(notificationId, notification)
                     }
 
                     override fun onNotificationCancelled(
