@@ -2,6 +2,8 @@
 
 This is a simple Radio Finder app designed to showcase skills in Android development using Kotlin. The app consists of two main pages: Main and Detail. The player is accessible from both pages, and users can search for stations, play audio while the app is in the background, and control play/pause from the notification bar. Additionally, the app features an audio visualizer.
 
+You can download and try it on the Google Play Store: [Radio Finder](https://play.google.com/store/apps/details?id=app.codeitralf.radiofinder)
+
 ## Features
 
 - **Two Pages**: Main and Detail
