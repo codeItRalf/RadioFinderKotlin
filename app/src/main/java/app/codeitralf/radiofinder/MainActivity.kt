@@ -1,5 +1,4 @@
-package app.codeitralf.radiofinder.ui.main
-import MainScreen
+package app.codeitralf.radiofinder
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
@@ -12,6 +11,8 @@ import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
 import androidx.core.content.ContextCompat
 import androidx.media3.common.util.UnstableApi
+import androidx.navigation.compose.rememberNavController
+import app.codeitralf.radiofinder.navigation.AppNavigation
 import app.codeitralf.radiofinder.ui.theme.RadioFinderTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -26,10 +27,11 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             RadioFinderTheme {
+                val navController = rememberNavController()
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     CheckAndRequestNotificationPermission()
                 }
-                MainScreen()
+                AppNavigation(navController = navController)
             }
         }
     }

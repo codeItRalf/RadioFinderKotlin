@@ -19,12 +19,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -34,7 +31,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
 import app.codeitralf.radiofinder.data.model.RadioStation
 import app.codeitralf.radiofinder.data.model.StationCheck
-import app.codeitralf.radiofinder.services.PlayerService
 import coil.compose.AsyncImage
 
 @ExperimentalMaterial3Api
@@ -47,9 +43,8 @@ fun DetailsScreen(
 ) {
     val stationChecks by viewModel.stationChecks.collectAsStateWithLifecycle(initialValue = emptyList())
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
-    val playerService = remember { mutableStateOf<PlayerService?>(null) }
-    val isPlaying = remember { mutableStateOf(false) }
-    val isPlayerLoading = remember { mutableStateOf(false) }
+    val currentStation by viewModel.currentStation.collectAsStateWithLifecycle()
+    val isPlaying by viewModel.isPlaying.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
         viewModel.getStationCheck(station.stationUuid)
@@ -58,16 +53,12 @@ fun DetailsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(text = station.name ?: "N/A"  ) },
+                title = { Text(text = station.name ?: "N/A") },
                 navigationIcon = {
                     IconButton(onClick = onBackPressed) {
-                        Icon( Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                )
             )
         }
     ) { paddingValues ->
@@ -97,20 +88,21 @@ fun DetailsScreen(
                     modifier = Modifier
                         .align(Alignment.CenterHorizontally)
                 ) {
-                    if (isPlayerLoading.value) {
+                    if (isLoading) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(48.dp)
                         )
                     } else {
                         IconButton(
-                            onClick = {
-                                playerService.value?.playPause(station)
-                            },
+                            onClick = { viewModel.playPause(station) },
                             modifier = Modifier.size(48.dp)
                         ) {
                             Icon(
-                                if (isPlaying.value) Icons.Default.Close else Icons.Default.PlayArrow,
-                                contentDescription = if (isPlaying.value) "Pause" else "Play"
+                                if (isPlaying && currentStation?.stationUuid == station.stationUuid)
+                                    Icons.Default.Close
+                                else
+                                    Icons.Default.PlayArrow,
+                                contentDescription = if (isPlaying) "Pause" else "Play"
                             )
                         }
                     }

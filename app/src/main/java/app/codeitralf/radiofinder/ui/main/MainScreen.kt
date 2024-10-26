@@ -5,12 +5,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.codeitralf.radiofinder.data.model.RadioStation
 import app.codeitralf.radiofinder.ui.main.MainViewModel
 
 
 @Composable
 fun MainScreen(
-    viewModel: MainViewModel = hiltViewModel()
+    viewModel: MainViewModel = hiltViewModel(),
+    onNavigateToDetails: (RadioStation) -> Unit
+
 ) {
     val stations by viewModel.stations.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
@@ -29,7 +32,7 @@ fun MainScreen(
                     station = currentStation,
                     isPlaying = isPlaying,
                     onPlayPauseClick = viewModel::playPause,
-                    onControllerClick = { /* Navigate to details */ }
+                    onControllerClick = { currentStation?.let(onNavigateToDetails) }
                 )
             }
         }
@@ -40,7 +43,7 @@ fun MainScreen(
             isLoading = isLoading,
             currentStation = currentStation,
             onStationClick = viewModel::playPause,
-            onStationDetailsClick = { /* Navigate to details */ }
+            onStationDetailsClick = onNavigateToDetails
         )
     }
 }

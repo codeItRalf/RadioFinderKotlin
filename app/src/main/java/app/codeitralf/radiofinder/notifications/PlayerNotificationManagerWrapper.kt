@@ -14,7 +14,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaSessionService
 import androidx.media3.ui.PlayerNotificationManager
 import app.codeitralf.radiofinder.data.model.RadioStation
-import app.codeitralf.radiofinder.ui.main.MainActivity
+import app.codeitralf.radiofinder.MainActivity
 import coil.ImageLoader
 import coil.request.ImageRequest
 import kotlinx.coroutines.CoroutineScope

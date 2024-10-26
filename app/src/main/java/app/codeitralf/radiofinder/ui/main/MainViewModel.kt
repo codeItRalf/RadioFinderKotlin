@@ -76,7 +76,7 @@ class MainViewModel @OptIn(UnstableApi::class)
                     currentSize
                 )
                 if (result.isNotEmpty()) {
-                    _stations.value = _stations.value + result.filter {
+                    _stations.value += result.filter {
                         !it.name.isNullOrBlank() && !it.resolvedUrl.isNullOrBlank()
                     }
                 }

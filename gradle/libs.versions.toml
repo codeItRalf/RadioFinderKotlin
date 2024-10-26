@@ -42,8 +42,7 @@ coil = "2.5.0"
 kotlinxCoroutinesCore = "1.7.3"
 kotlinxCoroutinesAndroid = "1.7.3"
 
-# Navigation
-navigationFragmentKtx = "2.7.7"  # Can be removed if using Compose Navigation
+
 
 # Testing
 junit = "4.13.2"
