@@ -7,7 +7,6 @@ import androidx.media3.common.util.Log
 import androidx.media3.common.util.UnstableApi
 import app.codeitralf.radiofinder.data.model.RadioStation
 import app.codeitralf.radiofinder.data.repository.RadioRepository
-import app.codeitralf.radiofinder.services.FFTAudioProcessor
 import app.codeitralf.radiofinder.services.ServiceConnectionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -35,9 +34,6 @@ class MainViewModel @OptIn(UnstableApi::class)
     private val _isPlaying = MutableStateFlow(false)
     val isPlaying = _isPlaying.asStateFlow()
 
-    private val _processor = MutableStateFlow<FFTAudioProcessor?>(null)
-    val processor = _processor.asStateFlow()
-
     private var searchJob: Job? = null
     private var searchTerm = ""
     private val limit = 30 // Preserved from old ViewModel
@@ -59,7 +55,7 @@ class MainViewModel @OptIn(UnstableApi::class)
                     !it.name.isNullOrBlank() && !it.resolvedUrl.isNullOrBlank()
                 }
             } catch (e: Exception) {
-                Log.e("app.codeitralf.radiofinder.ui.main.MainViewModel", "Failed to fetch stations", e)
+                Log.e("MainViewModel", "Failed to fetch stations", e)
             } finally {
                 _isLoading.value = false
             }
@@ -85,7 +81,7 @@ class MainViewModel @OptIn(UnstableApi::class)
                     }
                 }
             } catch (e: Exception) {
-                Log.e("app.codeitralf.radiofinder.ui.main.MainViewModel", "Failed to load next page", e)
+                Log.e("MainViewModel", "Failed to load next page", e)
             } finally {
                 _isLoading.value = false
             }
@@ -108,13 +104,12 @@ class MainViewModel @OptIn(UnstableApi::class)
                             try {
                                 radioRepository.clickCounter(it.stationUuid)
                             } catch (e: Exception) {
-                                Log.e("app.codeitralf.radiofinder.ui.main.MainViewModel", "Failed to update click counter", e)
+                                Log.e("MainViewModel", "Failed to update click counter", e)
                             }
                         }
                     }
                 }
 
-                _processor.value = playerService.getAudioProcessor()
 
                 viewModelScope.launch {
                     playerService.isPlaying.collect { playing ->

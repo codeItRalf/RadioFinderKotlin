@@ -1,6 +1,5 @@
 package app.codeitralf.radiofinder.ui.details
 
-import ExoVisualizerView
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,18 +21,18 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.media3.common.util.Log
 import androidx.media3.common.util.UnstableApi
 import app.codeitralf.radiofinder.data.model.RadioStation
 import app.codeitralf.radiofinder.data.model.StationCheck
+import app.codeitralf.radiofinder.ui.composables.sharedVisualizer.SharedVisualizer
 import coil.compose.AsyncImage
 
 @ExperimentalMaterial3Api
@@ -42,21 +41,16 @@ import coil.compose.AsyncImage
 fun DetailsScreen(
     station: RadioStation,
     onBackPressed: () -> Unit,
-    viewModel: DetailsViewModel = hiltViewModel()
+    viewModel: DetailsViewModel = hiltViewModel(),
+    visualizer: SharedVisualizer
+
 ) {
     val stationChecks by viewModel.stationChecks.collectAsStateWithLifecycle(initialValue = emptyList())
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val currentStation by viewModel.currentStation.collectAsStateWithLifecycle()
     val isPlaying by viewModel.isPlaying.collectAsStateWithLifecycle()
-    val processor by viewModel.processor.collectAsStateWithLifecycle()
 
 
-    // Ensure cleanup when leaving the screen
-    DisposableEffect(Unit) {
-        onDispose {
-            viewModel.cleanupVisualizer()
-        }
-    }
 
     Scaffold(
         topBar = {
@@ -69,22 +63,18 @@ fun DetailsScreen(
                 },
             )
         },
+
         bottomBar = {
+            Log.d("DetailsScreen", "Rendering visualizer for station: ${station.stationUuid}")
             if (currentStation != null) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(100.dp)
                 ) {
-                    // Visualizer background
-                    ExoVisualizerView(
+                    visualizer(
                         modifier = Modifier.fillMaxSize(),
-                        processor = processor,
-                        fillColor = MaterialTheme.colorScheme.surface.toArgb(),
-                        bandsColor = MaterialTheme.colorScheme.primary.toArgb(),
-                        avgColor = MaterialTheme.colorScheme.secondary.toArgb(),
-                        pathColor = MaterialTheme.colorScheme.tertiary.toArgb(),
-                        enabled = isPlaying && currentStation?.stationUuid == station.stationUuid
+                        targetStation = station
                     )
                 }
             }

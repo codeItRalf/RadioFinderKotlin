@@ -8,7 +8,6 @@ import androidx.media3.common.util.UnstableApi
 import app.codeitralf.radiofinder.data.model.RadioStation
 import app.codeitralf.radiofinder.data.model.StationCheck
 import app.codeitralf.radiofinder.data.repository.RadioRepository
-import app.codeitralf.radiofinder.services.FFTAudioProcessor
 import app.codeitralf.radiofinder.services.ServiceConnectionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,8 +35,6 @@ class DetailsViewModel @OptIn(UnstableApi::class)
     private val _currentStation = MutableStateFlow<RadioStation?>(null)
     val currentStation = _currentStation.asStateFlow()
 
-    private val _processor = MutableStateFlow<FFTAudioProcessor?>(null)
-    val processor = _processor.asStateFlow()
 
     init {
         observePlayerService()
@@ -51,12 +48,6 @@ class DetailsViewModel @OptIn(UnstableApi::class)
             Log.d("DetailsViewModel", "Service callback received: ${service != null}")
 
             service?.let { playerService ->
-                Log.d("DetailsViewModel", "Setting up service observations")
-
-                // Get processor
-                _processor.value = playerService.getAudioProcessor()
-                Log.d("DetailsViewModel", "FFT Processor obtained: ${_processor.value != null}")
-
                 // Observe current station
                 viewModelScope.launch {
                     try {
@@ -104,18 +95,5 @@ class DetailsViewModel @OptIn(UnstableApi::class)
         }
     }
 
-    @OptIn(UnstableApi::class)
-    fun cleanupVisualizer() {
-        // Reset processor state when leaving the screen
-        serviceConnectionManager.getService()?.let { service ->
-            service.getAudioProcessor()?.let { processor ->
-                processor.listener = null
-            }
-        }
-    }
 
-    override fun onCleared() {
-        super.onCleared()
-        cleanupVisualizer()
-    }
 }

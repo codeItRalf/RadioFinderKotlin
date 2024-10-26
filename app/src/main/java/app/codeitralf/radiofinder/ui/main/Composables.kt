@@ -39,12 +39,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.util.UnstableApi
 import app.codeitralf.radiofinder.data.model.RadioStation
-import app.codeitralf.radiofinder.services.FFTAudioProcessor
+import app.codeitralf.radiofinder.ui.composables.sharedVisualizer.SharedVisualizer
 import coil.compose.AsyncImage
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -178,28 +177,21 @@ fun StationItem(
 @Composable
 fun FloatingPlayerController(
     station: RadioStation?,
-    isPlaying: Boolean,
-    processor: FFTAudioProcessor?,
     onPlayPauseClick: (RadioStation?) -> Unit,
     onControllerClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    visualizer: SharedVisualizer,
+    isPlaying: Boolean
 ) {
     if (station == null) return
-
     Box(
         modifier = modifier
             .fillMaxWidth()
             .height(64.dp)
     ) {
-        // Visualizer background
-        ExoVisualizerView(
+        visualizer(
             modifier = Modifier.fillMaxSize(),
-            processor = processor,
-            fillColor = MaterialTheme.colorScheme.surface.toArgb(),
-            bandsColor = MaterialTheme.colorScheme.primary.toArgb(),
-            avgColor = MaterialTheme.colorScheme.secondary.toArgb(),
-            pathColor = MaterialTheme.colorScheme.tertiary.toArgb(),
-            enabled = isPlaying
+            targetStation = station
         )
         Surface(
             modifier = modifier

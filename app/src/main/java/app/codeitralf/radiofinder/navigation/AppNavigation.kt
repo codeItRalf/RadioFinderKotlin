@@ -9,6 +9,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import app.codeitralf.radiofinder.data.model.RadioStation
+import app.codeitralf.radiofinder.ui.composables.sharedVisualizer.SharedVisualizer
 import app.codeitralf.radiofinder.ui.details.DetailsScreen
 
 sealed class Screen(val route: String) {
@@ -24,6 +25,9 @@ fun AppNavigation(
     navController: NavHostController,
     startDestination: String = Screen.Main.route
 ) {
+
+    val visualizer = SharedVisualizer();
+
     NavHost(
         navController = navController,
         startDestination = startDestination
@@ -33,7 +37,8 @@ fun AppNavigation(
                 onNavigateToDetails = { station ->
                     navController.currentBackStackEntry?.savedStateHandle?.set("station", station)
                     navController.navigate(Screen.Details.createRoute(station.stationUuid))
-                }
+                },
+                visualizer = visualizer
             )
         }
 
@@ -47,7 +52,8 @@ fun AppNavigation(
             station?.let {
                 DetailsScreen(
                     station = it,
-                    onBackPressed = { navController.popBackStack() }
+                    onBackPressed = { navController.popBackStack() },
+                    visualizer = visualizer
                 )
             }
         }

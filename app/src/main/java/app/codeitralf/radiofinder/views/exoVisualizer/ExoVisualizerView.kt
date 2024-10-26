@@ -1,24 +1,25 @@
+package app.codeitralf.radiofinder.views.exoVisualizer
+
 import androidx.annotation.OptIn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.media3.common.util.Log
 import androidx.media3.common.util.UnstableApi
 import app.codeitralf.radiofinder.services.FFTAudioProcessor
-import app.codeitralf.radiofinder.views.ExoVisualizer
+
+class ExoVisualizerState {
+    var visualizer by mutableStateOf<ExoVisualizer?>(null)
+}
 
 @Composable
 fun rememberExoVisualizerState(): ExoVisualizerState {
     return remember { ExoVisualizerState() }
-}
-
-class ExoVisualizerState {
-    var visualizer by mutableStateOf<ExoVisualizer?>(null)
 }
 
 @OptIn(UnstableApi::class)
@@ -34,17 +35,13 @@ fun ExoVisualizerView(
 ) {
     val visualizerState = rememberExoVisualizerState()
 
+    Log.d("ExoVisualizerView", "Composing with processor: ${processor != null}, enabled: $enabled")
 
-    // Ensure immediate update when enabled state changes
-    LaunchedEffect(processor, enabled) {
-        visualizerState.visualizer?.let { visualizer ->
-            visualizer.processor = processor
-            visualizer.updateProcessorListenerState(enabled)
-        }
-    }
-
-    DisposableEffect(processor, enabled) {
+    // Add lifecycle logging
+    DisposableEffect(Unit) {
+        Log.d("ExoVisualizerView", "Entering composition")
         onDispose {
+            Log.d("ExoVisualizerView", "Disposing composition")
             visualizerState.visualizer?.updateProcessorListenerState(false)
         }
     }
@@ -52,6 +49,7 @@ fun ExoVisualizerView(
     AndroidView(
         modifier = modifier,
         factory = { context ->
+            Log.d("ExoVisualizerView", "Creating new ExoVisualizer")
             ExoVisualizer(context).apply {
                 this.processor = processor
                 setColor(fillColor, bandsColor, avgColor, pathColor)
@@ -60,8 +58,10 @@ fun ExoVisualizerView(
             }
         },
         update = { view ->
+            Log.d("ExoVisualizerView", "Updating ExoVisualizer, enabled: $enabled")
             view.processor = processor
             view.updateProcessorListenerState(enabled)
+            view.setColor(fillColor, bandsColor, avgColor, pathColor)
         }
     )
 }

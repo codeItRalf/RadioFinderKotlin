@@ -8,6 +8,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
 import app.codeitralf.radiofinder.data.model.RadioStation
+import app.codeitralf.radiofinder.ui.composables.sharedVisualizer.SharedVisualizer
 import app.codeitralf.radiofinder.ui.main.MainViewModel
 
 
@@ -15,14 +16,15 @@ import app.codeitralf.radiofinder.ui.main.MainViewModel
 @Composable
 fun MainScreen(
     viewModel: MainViewModel = hiltViewModel(),
-    onNavigateToDetails: (RadioStation) -> Unit
+    onNavigateToDetails: (RadioStation) -> Unit,
+    visualizer: SharedVisualizer
 
 ) {
     val stations by viewModel.stations.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val currentStation by viewModel.currentStation.collectAsStateWithLifecycle()
     val isPlaying by viewModel.isPlaying.collectAsStateWithLifecycle()
-    val processor by viewModel.processor.collectAsStateWithLifecycle()
+
     Scaffold(
         topBar = {
             RadioAppBar(
@@ -33,10 +35,10 @@ fun MainScreen(
             if (currentStation != null) {
                 FloatingPlayerController(
                     station = currentStation,
-                    isPlaying = isPlaying,
-                    processor = processor,
                     onPlayPauseClick = viewModel::playPause,
-                    onControllerClick = { currentStation?.let(onNavigateToDetails) }
+                    onControllerClick = { currentStation?.let(onNavigateToDetails) },
+                    visualizer = visualizer,
+                    isPlaying = isPlaying
                 )
             }
         }
