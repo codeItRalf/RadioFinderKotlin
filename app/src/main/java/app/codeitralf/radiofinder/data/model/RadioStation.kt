@@ -89,9 +89,7 @@ data class RadioStation(
 
         other as RadioStation
 
-        if (stationUuid != other.stationUuid) return false
-
-        return true
+        return stationUuid == other.stationUuid
     }
 
     override fun hashCode(): Int {

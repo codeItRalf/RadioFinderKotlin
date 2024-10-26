@@ -2,6 +2,8 @@ package app.codeitralf.radiofinder.utils
 
 import android.content.Context
 import android.os.Handler
+import androidx.annotation.OptIn
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.Renderer
 import androidx.media3.exoplayer.audio.AudioRendererEventListener
@@ -13,6 +15,7 @@ import app.codeitralf.radiofinder.services.FFTAudioProcessor
 
 object RenderersFactoryUtil {
 
+    @OptIn(UnstableApi::class)
     fun createRenderersFactory(context: Context, fftAudioProcessor: FFTAudioProcessor): DefaultRenderersFactory {
         return object : DefaultRenderersFactory(context) {
             override fun buildAudioRenderers(

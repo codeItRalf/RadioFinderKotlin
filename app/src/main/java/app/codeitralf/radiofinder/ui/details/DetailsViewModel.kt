@@ -1,24 +1,35 @@
 package app.codeitralf.radiofinder.ui.details
 
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
+import androidx.annotation.OptIn
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.media3.common.util.UnstableApi
 import app.codeitralf.radiofinder.data.model.StationCheck
 import app.codeitralf.radiofinder.data.repository.RadioRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class DetailsViewModel : ViewModel() {
- private  val repository = RadioRepository.getInstance()
-    private  val _stationChecks = MutableLiveData<List<StationCheck>>()
-    val stationChecks : LiveData<List<StationCheck>> get() = _stationChecks
 
-    private  val _isLoading = MutableLiveData<Boolean>()
-    val isLoading : LiveData<Boolean> get() = _isLoading
+@HiltViewModel
+class DetailsViewModel @OptIn(UnstableApi::class)
+@Inject constructor(
+    private  val repository: RadioRepository
+) : ViewModel() {
+
+
+    private  val _stationChecks = MutableStateFlow<List<StationCheck>>(emptyList())
+    val stationChecks : StateFlow<List<StationCheck>>  = _stationChecks.asStateFlow()
+
+    private  val _isLoading = MutableStateFlow(false)
+    val isLoading : StateFlow<Boolean>  = _isLoading.asStateFlow()
 
 
     fun getStationCheck(stationUuid: String) {
-        if (_isLoading.value == true) return
+        if (_isLoading.value) return
         _isLoading.value = true
         viewModelScope.launch {
             try {

@@ -7,7 +7,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
-import android.graphics.drawable.Drawable
+import android.graphics.drawable.BitmapDrawable
 import android.os.Build
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
@@ -15,7 +15,12 @@ import androidx.media3.session.MediaSessionService
 import androidx.media3.ui.PlayerNotificationManager
 import app.codeitralf.radiofinder.data.model.RadioStation
 import app.codeitralf.radiofinder.ui.main.MainActivity
-import com.squareup.picasso.Picasso
+import coil.ImageLoader
+import coil.request.ImageRequest
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @UnstableApi
 class PlayerNotificationManagerWrapper(
@@ -89,20 +94,13 @@ class PlayerNotificationManagerWrapper(
             ): Bitmap? {
                 val faviconUrl = getCurrentStation()?.favicon
                 if (faviconUrl != null) {
-                    Picasso.get()
-                        .load(faviconUrl)
-                        .into(object : com.squareup.picasso.Target {
-                            override fun onBitmapLoaded(bitmap: Bitmap, from: Picasso.LoadedFrom) {
+                    CoroutineScope(Dispatchers.IO).launch {
+                        loadBitmap(faviconUrl)?.let { bitmap ->
+                            withContext(Dispatchers.Main) {
                                 callback.onBitmap(bitmap)
                             }
-
-                            override fun onBitmapFailed(e: Exception, errorDrawable: Drawable?) {
-                            }
-
-                            override fun onPrepareLoad(placeHolderDrawable: Drawable?) {
-
-                            }
-                        })
+                        }
+                    }
                 }
                 return null
             }
@@ -138,9 +136,22 @@ class PlayerNotificationManagerWrapper(
         playerNotificationManager.setPlayer(exoPlayer)
     }
 
-    private fun startForeground(notificationId: Int, notification: Notification) {
-        (context as MediaSessionService). startForeground(notificationId, notification)
+    private suspend fun loadBitmap(url: String): Bitmap? {
+        return try {
+            val imageLoader = ImageLoader(context)
+            val request = ImageRequest.Builder(context)
+                .data(url)
+                .size(144, 144)  // Recommended size for notification icons
+                .allowHardware(false)  // Required for getting Bitmap
+                .build()
+
+            val result = (imageLoader.execute(request).drawable as? BitmapDrawable)?.bitmap
+            result
+        } catch (e: Exception) {
+            null
+        }
     }
+
 
     companion object {
         private const val CHANNEL_ID = "media_playback_channel"

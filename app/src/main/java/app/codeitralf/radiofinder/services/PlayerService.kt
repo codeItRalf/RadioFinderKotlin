@@ -5,8 +5,6 @@ import android.os.Binder
 import android.os.IBinder
 import android.util.Log
 import android.widget.Toast
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
@@ -16,6 +14,9 @@ import androidx.media3.session.MediaSessionService
 import app.codeitralf.radiofinder.data.model.RadioStation
 import app.codeitralf.radiofinder.notifications.PlayerNotificationManagerWrapper
 import app.codeitralf.radiofinder.utils.PlayerInitializer
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 @UnstableApi
 class PlayerService : MediaSessionService() {
@@ -31,14 +32,14 @@ class PlayerService : MediaSessionService() {
     private lateinit var playerNotificationManagerWrapper: PlayerNotificationManagerWrapper
 
     // LiveData for current station, loading and playing state
-    private val _currentStation = MutableLiveData<RadioStation?>()
-    val currentStation: LiveData<RadioStation?> get() = _currentStation
+    private val _currentStation = MutableStateFlow<RadioStation?>(null)
+    val currentStation: StateFlow<RadioStation?>  = _currentStation.asStateFlow()
 
-    private val _isLoading = MutableLiveData<Boolean>()
-    val isLoading: LiveData<Boolean> get() = _isLoading
+    private val _isLoading = MutableStateFlow<Boolean>(value = false)
+    val isLoading: StateFlow<Boolean>  =  _isLoading.asStateFlow()
 
-    private val _isPlaying = MutableLiveData<Boolean>()
-    val isPlaying: LiveData<Boolean> get() = _isPlaying
+    private val _isPlaying = MutableStateFlow<Boolean>(false)
+    val isPlaying: StateFlow<Boolean>  = _isPlaying.asStateFlow()
 
     // Audio processor for visualization
     private val _fftAudioProcessor = FFTAudioProcessor()
@@ -90,18 +91,18 @@ class PlayerService : MediaSessionService() {
     fun createPlayerListener(): Player.Listener {
         return object : Player.Listener {
             override fun onIsPlayingChanged(isPlaying: Boolean) {
-                _isPlaying.postValue(isPlaying)
+                _isPlaying.value = isPlaying
             }
 
             override fun onPlaybackStateChanged(playbackState: Int) {
-                _isLoading.postValue(playbackState == Player.STATE_BUFFERING)
+                _isLoading.value = playbackState == Player.STATE_BUFFERING
             }
         }
     }
 
     fun playPause(station: RadioStation?) {
         if (station == null || station == _currentStation.value) {
-            if (_isPlaying.value == true) {
+            if (_isPlaying.value) {
                 exoPlayer.pause()
             } else {
                 exoPlayer.play()

@@ -1,7 +1,9 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.jetbrains.kotlin.android)
-    id("org.jetbrains.kotlin.plugin.parcelize")
+    alias(libs.plugins.kotlin.android)
+    id("kotlin-parcelize")
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.hilt)
 }
 
 
@@ -43,7 +45,7 @@ android {
         compose = true
     }
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.1"
+        kotlinCompilerExtensionVersion = libs.versions.composeCompiler.get()
     }
     packaging {
         resources {
@@ -53,34 +55,54 @@ android {
 }
 
 dependencies {
-    implementation (libs.okhttp)
-    implementation( libs.noise)
-    implementation(libs.material)
-    implementation (libs.picasso)
-    implementation(libs.androidx.navigation.fragment.ktx)
-    implementation(libs.androidx.navigation.ui.ktx)
+    // Platform/BOM dependencies should be first
+    implementation(platform(libs.compose.bom))
+
+    // Core Android
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.appcompat)
+
+    // Compose
+    implementation(libs.bundles.compose)  // This should contain all basic compose dependencies
+    implementation(libs.compose.material3)
+    implementation(libs.compose.ui)
+
+    // Lifecycle
+    implementation(libs.bundles.lifecycle)
+
+    // Navigation
+    implementation(libs.compose.navigation)
+
+    // Dependency Injection
+    implementation(libs.hilt.android)
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.compiler)
+    implementation(libs.hilt.navigation.compose)
+
+    // Networking
+    implementation(libs.bundles.networking)  // This should contain retrofit, okhttp, etc.
     implementation(libs.retrofit)
     implementation(libs.converter.gson)
-    implementation (libs.kotlinx.coroutines.core)
-    implementation (libs.kotlinx.coroutines.android)
-    implementation(libs.androidx.media3.exoplayer)
-    implementation(libs.androidx.media3.ui)
+    implementation(libs.okhttp)
+
+    // Media
     implementation(libs.androidx.media3.session)
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(libs.androidx.activity.compose)
-    implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.ui)
-    implementation(libs.androidx.ui.graphics)
-    implementation(libs.androidx.ui.tooling.preview)
-    implementation(libs.androidx.material3)
-    implementation(libs.firebase.firestore.ktx)
-    implementation(libs.play.services.cast.framework)
+    implementation(libs.media3.exoplayer)
+    implementation(libs.media3.ui)
+
+    // Image Loading
+    implementation(libs.coil)
+
+    // Coroutines
+    implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.kotlinx.coroutines.android)
+
+    // Audio Visualization
+    implementation(libs.noise)
+
+    // Testing
+    testImplementation(libs.bundles.testing)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(libs.androidx.ui.test.junit4)
-    debugImplementation(libs.androidx.ui.tooling)
-    debugImplementation(libs.androidx.ui.test.manifest)
 }
