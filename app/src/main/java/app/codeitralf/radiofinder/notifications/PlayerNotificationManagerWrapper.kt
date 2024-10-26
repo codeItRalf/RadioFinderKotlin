@@ -30,6 +30,25 @@ class PlayerNotificationManagerWrapper(
     init {
         createNotificationChannel()
         initializeNotificationManager()
+
+        showInitialNotification()
+    }
+
+    // Add this method
+    private fun showInitialNotification() {
+        val notification = createInitialNotification()
+        (context as MediaSessionService).startForeground(NOTIFICATION_ID, notification)
+        isInForeground = true
+    }
+
+    // Add this method
+    private fun createInitialNotification(): Notification {
+        return androidx.core.app.NotificationCompat.Builder(context, CHANNEL_ID)
+            .setContentTitle(getCurrentStation()?.name ?: "Radio Player")
+            .setContentText("Loading...")
+            .setSmallIcon(app.codeitralf.radiofinder.R.drawable.icon) // Make sure you have this icon
+            .setOngoing(true)
+            .build()
     }
 
     private fun createNotificationChannel() {
@@ -98,9 +117,12 @@ class PlayerNotificationManagerWrapper(
                         notification: Notification,
                         ongoing: Boolean
                     ) {
-                        if (ongoing && !isInForeground && getCurrentStation() != null) {
-                            startForeground(notificationId, notification)
-                            isInForeground = true
+                        if (ongoing && getCurrentStation() != null) {
+                            // Update the notification instead of starting foreground
+                            if (!isInForeground) {
+                                (context as MediaSessionService).startForeground(notificationId, notification)
+                                isInForeground = true
+                            }
                         }
                     }
 

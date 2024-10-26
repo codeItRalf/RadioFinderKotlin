@@ -52,6 +52,7 @@ class PlayerService : MediaSessionService() {
             { _currentStation.value },
             { stopMedia() }
         )
+
     }
 
     override fun onBind(intent: Intent?): IBinder {
