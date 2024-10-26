@@ -1,3 +1,4 @@
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -38,18 +39,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import androidx.media3.common.util.UnstableApi
 import app.codeitralf.radiofinder.data.model.RadioStation
+import app.codeitralf.radiofinder.services.FFTAudioProcessor
 import coil.compose.AsyncImage
-import kotlin.reflect.KFunction1
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RadioAppBar(
     onSearchQueryChanged: (String) -> Unit,
 
-) {
+    ) {
     var searchQuery by remember { mutableStateOf("") }
     var isSearchActive by remember { mutableStateOf(false) }
 
@@ -171,51 +174,68 @@ fun StationItem(
     }
 }
 
+@androidx.annotation.OptIn(UnstableApi::class)
 @Composable
 fun FloatingPlayerController(
     station: RadioStation?,
     isPlaying: Boolean,
-    onPlayPauseClick: KFunction1<RadioStation?, Unit>,
+    processor: FFTAudioProcessor?,
+    onPlayPauseClick: (RadioStation?) -> Unit,
     onControllerClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     if (station == null) return
 
-    Surface(
+    Box(
         modifier = modifier
             .fillMaxWidth()
             .height(64.dp)
-            .clickable(onClick = onControllerClick),
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 8.dp
     ) {
-        Row(
-            modifier = Modifier
-                .padding(horizontal = 16.dp),
-            verticalAlignment = Alignment.CenterVertically
+        // Visualizer background
+        ExoVisualizerView(
+            modifier = Modifier.fillMaxSize(),
+            processor = processor,
+            fillColor = MaterialTheme.colorScheme.surface.toArgb(),
+            bandsColor = MaterialTheme.colorScheme.primary.toArgb(),
+            avgColor = MaterialTheme.colorScheme.secondary.toArgb(),
+            pathColor = MaterialTheme.colorScheme.tertiary.toArgb(),
+            enabled = isPlaying
+        )
+        Surface(
+            modifier = modifier
+                .fillMaxSize()
+                .clickable(onClick = onControllerClick),
+            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+            tonalElevation = 8.dp
         ) {
-            AsyncImage(
-                model = station.favicon,
-                contentDescription = "Station logo",
+            Row(
                 modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape),
-                contentScale = ContentScale.Crop
-            )
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            Text(
-                text = station.name ?: "",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.weight(1f)
-            )
-
-            IconButton(onClick = { onPlayPauseClick(station) }) {
-                Icon(
-                    imageVector = if (isPlaying) Icons.Default.Close else Icons.Default.PlayArrow,
-                    contentDescription = if (isPlaying) "Pause" else "Play"
+                    .padding(horizontal = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                AsyncImage(
+                    model = station.favicon,
+                    contentDescription = "Station logo",
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape),
+                    contentScale = ContentScale.Crop
                 )
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                Text(
+                    text = station.name ?: "",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.weight(1f)
+                )
+
+                IconButton(onClick = { onPlayPauseClick(station) }) {
+                    Icon(
+                        imageVector = if (isPlaying) Icons.Default.Close else Icons.Default.PlayArrow,
+                        contentDescription = if (isPlaying) "Pause" else "Play"
+                    )
+                }
             }
         }
     }

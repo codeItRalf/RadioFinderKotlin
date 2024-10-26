@@ -1,5 +1,6 @@
 package app.codeitralf.radiofinder.ui.details
 
+import android.util.Log
 import androidx.annotation.OptIn
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -7,6 +8,7 @@ import androidx.media3.common.util.UnstableApi
 import app.codeitralf.radiofinder.data.model.RadioStation
 import app.codeitralf.radiofinder.data.model.StationCheck
 import app.codeitralf.radiofinder.data.repository.RadioRepository
+import app.codeitralf.radiofinder.services.FFTAudioProcessor
 import app.codeitralf.radiofinder.services.ServiceConnectionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,23 +36,48 @@ class DetailsViewModel @OptIn(UnstableApi::class)
     private val _currentStation = MutableStateFlow<RadioStation?>(null)
     val currentStation = _currentStation.asStateFlow()
 
+    private val _processor = MutableStateFlow<FFTAudioProcessor?>(null)
+    val processor = _processor.asStateFlow()
+
     init {
         observePlayerService()
     }
 
     @OptIn(UnstableApi::class)
     private fun observePlayerService() {
+        Log.d("DetailsViewModel", "Starting service observation")
+
         serviceConnectionManager.bindService { service ->
+            Log.d("DetailsViewModel", "Service callback received: ${service != null}")
+
             service?.let { playerService ->
+                Log.d("DetailsViewModel", "Setting up service observations")
+
+                // Get processor
+                _processor.value = playerService.getAudioProcessor()
+                Log.d("DetailsViewModel", "FFT Processor obtained: ${_processor.value != null}")
+
+                // Observe current station
                 viewModelScope.launch {
-                    playerService.currentStation.collect { station ->
-                        _currentStation.value = station
+                    try {
+                        playerService.currentStation.collect { station ->
+                            Log.d("DetailsViewModel", "Station updated: ${station?.name}")
+                            _currentStation.value = station
+                        }
+                    } catch (e: Exception) {
+                        Log.e("DetailsViewModel", "Error collecting station", e)
                     }
                 }
 
+                // Observe playing state
                 viewModelScope.launch {
-                    playerService.isPlaying.collect { playing ->
-                        _isPlaying.value = playing
+                    try {
+                        playerService.isPlaying.collect { playing ->
+                            Log.d("DetailsViewModel", "Playing state updated: $playing")
+                            _isPlaying.value = playing
+                        }
+                    } catch (e: Exception) {
+                        Log.e("DetailsViewModel", "Error collecting playing state", e)
                     }
                 }
             }
@@ -75,5 +102,20 @@ class DetailsViewModel @OptIn(UnstableApi::class)
                 _isLoading.value = false
             }
         }
+    }
+
+    @OptIn(UnstableApi::class)
+    fun cleanupVisualizer() {
+        // Reset processor state when leaving the screen
+        serviceConnectionManager.getService()?.let { service ->
+            service.getAudioProcessor()?.let { processor ->
+                processor.listener = null
+            }
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        cleanupVisualizer()
     }
 }

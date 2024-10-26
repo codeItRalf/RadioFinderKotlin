@@ -1,10 +1,12 @@
 package app.codeitralf.radiofinder.ui.details
 
+import ExoVisualizerView
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -20,10 +22,11 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -45,9 +48,14 @@ fun DetailsScreen(
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val currentStation by viewModel.currentStation.collectAsStateWithLifecycle()
     val isPlaying by viewModel.isPlaying.collectAsStateWithLifecycle()
+    val processor by viewModel.processor.collectAsStateWithLifecycle()
 
-    LaunchedEffect(Unit) {
-        viewModel.getStationCheck(station.stationUuid)
+
+    // Ensure cleanup when leaving the screen
+    DisposableEffect(Unit) {
+        onDispose {
+            viewModel.cleanupVisualizer()
+        }
     }
 
     Scaffold(
@@ -60,6 +68,26 @@ fun DetailsScreen(
                     }
                 },
             )
+        },
+        bottomBar = {
+            if (currentStation != null) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(100.dp)
+                ) {
+                    // Visualizer background
+                    ExoVisualizerView(
+                        modifier = Modifier.fillMaxSize(),
+                        processor = processor,
+                        fillColor = MaterialTheme.colorScheme.surface.toArgb(),
+                        bandsColor = MaterialTheme.colorScheme.primary.toArgb(),
+                        avgColor = MaterialTheme.colorScheme.secondary.toArgb(),
+                        pathColor = MaterialTheme.colorScheme.tertiary.toArgb(),
+                        enabled = isPlaying && currentStation?.stationUuid == station.stationUuid
+                    )
+                }
+            }
         }
     ) { paddingValues ->
         Box(

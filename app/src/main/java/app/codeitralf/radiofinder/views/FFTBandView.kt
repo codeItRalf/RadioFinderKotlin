@@ -7,8 +7,8 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.util.AttributeSet
 import android.view.View
-import androidx.media3.common.util.UnstableApi
 import androidx.core.content.ContextCompat
+import androidx.media3.common.util.UnstableApi
 import app.codeitralf.radiofinder.R
 import app.codeitralf.radiofinder.services.FFTAudioProcessor
 import java.lang.System.arraycopy
@@ -41,13 +41,17 @@ class FFTBandView @JvmOverloads constructor(
 
     private val smoothingFactor = 3
     private val previousValues = FloatArray(bands * smoothingFactor)
-
     private val fftPath = Path()
 
     private var startedAt: Long = 0
+    private var isActive = false
 
     init {
         keepScreenOn = true
+        setupPaints(context)
+    }
+
+    private fun setupPaints(context: Context) {
         paintBandsFill.color = ContextCompat.getColor(context, R.color.white_alpha_50)
         paintBandsFill.style = Paint.Style.FILL
 
@@ -74,7 +78,41 @@ class FFTBandView @JvmOverloads constructor(
         paintPath.color = pathColor
     }
 
+    fun onFFT(fft: FloatArray) {
+        synchronized(this.fft) {
+            if (fft.isEmpty()) {
+                clearVisualization()
+                return
+            }
+
+            if (startedAt == 0L) {
+                startedAt = System.currentTimeMillis()
+            }
+
+            if (fft.size >= size + 2) {
+                isActive = true
+                arraycopy(fft, 2, this.fft, 0, size)
+                postInvalidate()
+            }
+        }
+    }
+
+    private fun clearVisualization() {
+        synchronized(this.fft) {
+            isActive = false
+            fft.fill(0f)
+            previousValues.fill(0f)
+            startedAt = 0L
+            postInvalidate()
+        }
+    }
+
     private fun drawAudio(canvas: Canvas) {
+        if (!isActive) {
+            canvas.drawColor(Color.TRANSPARENT)
+            return
+        }
+
         canvas.drawColor(Color.TRANSPARENT)
 
         var currentFftPosition = 0
@@ -136,19 +174,11 @@ class FFTBandView @JvmOverloads constructor(
         canvas.drawLine(0f, height * (1 - (currentAverage / maxConst)), width.toFloat(), height * (1 - (currentAverage / maxConst)), paintAvg)
     }
 
-    fun onFFT(fft: FloatArray) {
-        synchronized(this.fft) {
-            if (startedAt == 0L) {
-                startedAt = System.currentTimeMillis()
-            }
-            arraycopy(fft, 2, this.fft, 0, size)
-            postInvalidate()
-        }
-    }
-
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         drawAudio(canvas)
-        postInvalidate()
+        if (isActive) {
+            postInvalidate()
+        }
     }
 }

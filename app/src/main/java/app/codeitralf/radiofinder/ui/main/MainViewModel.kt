@@ -7,6 +7,7 @@ import androidx.media3.common.util.Log
 import androidx.media3.common.util.UnstableApi
 import app.codeitralf.radiofinder.data.model.RadioStation
 import app.codeitralf.radiofinder.data.repository.RadioRepository
+import app.codeitralf.radiofinder.services.FFTAudioProcessor
 import app.codeitralf.radiofinder.services.ServiceConnectionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -33,6 +34,9 @@ class MainViewModel @OptIn(UnstableApi::class)
 
     private val _isPlaying = MutableStateFlow(false)
     val isPlaying = _isPlaying.asStateFlow()
+
+    private val _processor = MutableStateFlow<FFTAudioProcessor?>(null)
+    val processor = _processor.asStateFlow()
 
     private var searchJob: Job? = null
     private var searchTerm = ""
@@ -109,6 +113,8 @@ class MainViewModel @OptIn(UnstableApi::class)
                         }
                     }
                 }
+
+                _processor.value = playerService.getAudioProcessor()
 
                 viewModelScope.launch {
                     playerService.isPlaying.collect { playing ->
