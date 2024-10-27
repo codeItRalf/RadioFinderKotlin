@@ -80,7 +80,4 @@ class ServiceConnectionManager(private val context: Context) {
         return playerService
     }
 
-    fun isServiceBound(): Boolean {
-        return isBound
-    }
 }

@@ -3,13 +3,15 @@ package app.codeitralf.radiofinder.navigation
 import MainScreen
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import app.codeitralf.radiofinder.data.model.RadioStation
-import app.codeitralf.radiofinder.ui.composables.sharedVisualizer.SharedVisualizer
+import app.codeitralf.radiofinder.ui.composables.SharedVisualizer
 import app.codeitralf.radiofinder.ui.details.DetailsScreen
 
 sealed class Screen(val route: String) {
@@ -19,14 +21,16 @@ sealed class Screen(val route: String) {
     }
 }
 
+@androidx.annotation.OptIn(UnstableApi::class)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppNavigation(
     navController: NavHostController,
-    startDestination: String = Screen.Main.route
+    startDestination: String = Screen.Main.route,
+    sharedPlayerViewModel: SharedPlayerViewModel = hiltViewModel()
 ) {
 
-    val visualizer = SharedVisualizer();
+    val visualizer = SharedVisualizer(sharedPlayerViewModel);
 
     NavHost(
         navController = navController,
@@ -38,7 +42,8 @@ fun AppNavigation(
                     navController.currentBackStackEntry?.savedStateHandle?.set("station", station)
                     navController.navigate(Screen.Details.createRoute(station.stationUuid))
                 },
-                visualizer = visualizer
+                visualizer = visualizer,
+                sharedPlayerViewModel = sharedPlayerViewModel
             )
         }
 
@@ -53,7 +58,8 @@ fun AppNavigation(
                 DetailsScreen(
                     station = it,
                     onBackPressed = { navController.popBackStack() },
-                    visualizer = visualizer
+                    visualizer = visualizer,
+                    sharedPlayerViewModel = sharedPlayerViewModel
                 )
             }
         }

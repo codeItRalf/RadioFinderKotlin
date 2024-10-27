@@ -1,4 +1,5 @@
 package app.codeitralf.radiofinder
+import RadioFinderTheme
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
@@ -13,7 +14,6 @@ import androidx.core.content.ContextCompat
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation.compose.rememberNavController
 import app.codeitralf.radiofinder.navigation.AppNavigation
-import app.codeitralf.radiofinder.ui.theme.RadioFinderTheme
 import dagger.hilt.android.AndroidEntryPoint
 
 

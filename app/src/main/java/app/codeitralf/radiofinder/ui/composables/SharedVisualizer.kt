@@ -1,4 +1,4 @@
-package app.codeitralf.radiofinder.ui.composables.sharedVisualizer
+package app.codeitralf.radiofinder.ui.composables
 
 import android.util.Log
 import androidx.compose.material3.MaterialTheme
@@ -7,23 +7,24 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
 import app.codeitralf.radiofinder.data.model.RadioStation
+import app.codeitralf.radiofinder.navigation.SharedPlayerViewModel
 import app.codeitralf.radiofinder.views.exoVisualizer.ExoVisualizer
 import javax.inject.Inject
 
 
 @UnstableApi
-class SharedVisualizer @Inject constructor() {
+class SharedVisualizer @Inject constructor(
+    private val viewModel: SharedPlayerViewModel
+) {
     private var activeVisualizer: ExoVisualizer? = null
 
     @Composable
     operator fun invoke(
         modifier: Modifier = Modifier,
         targetStation: RadioStation?,
-        viewModel: SharedVisualizerViewModel = hiltViewModel()
     ) {
         val currentStation by viewModel.currentStation.collectAsStateWithLifecycle()
         val isPlaying by viewModel.isPlaying.collectAsStateWithLifecycle()

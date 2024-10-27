@@ -1,96 +1,196 @@
-package app.codeitralf.radiofinder.ui.theme
-
-import android.os.Build
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
-)
+// Base colors
+private val AlmostBlack = Color(0xFF121212)
+private val DarkGray = Color(0xFF1F1F1F)
+private val White = Color(0xFFFFFFFF)
 
-private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
+// Neon Colors
+private val NeonPink = Color(0xFFFF1B8D)
+private val NeonBlue = Color(0xFF00F3FF)
+private val NeonPurple = Color(0xFFBF00FF)
+private val NeonYellow = Color(0xFFFFE300)
+private val NeonGreen = Color(0xFF39FF14)
 
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
-)
+// Muted versions for containers
+private val MutedPink = Color(0xFF590031)
+private val MutedBlue = Color(0xFF004C52)
+private val MutedPurple = Color(0xFF3A0052)
 
 private val CustomColorScheme = darkColorScheme(
-    primary = AlmostBlack,
+    // Primary colors (Pink theme)
+    primary = NeonPink,
     onPrimary = White,
-    secondary = NeonPink,
-    tertiary = NeonBlue,
-    background = DarkGray,
-    surface = AlmostBlack,
+    primaryContainer = MutedPink,
+    onPrimaryContainer = NeonPink,
+
+    // Secondary colors (Blue theme)
+    secondary = NeonBlue,
+    onSecondary = AlmostBlack,
+    secondaryContainer = MutedBlue,
+    onSecondaryContainer = NeonBlue,
+
+    // Tertiary colors (Purple theme)
+    tertiary = NeonPurple,
+    onTertiary = White,
+    tertiaryContainer = MutedPurple,
+    onTertiaryContainer = NeonPurple,
+
+    // Background colors
+    background = AlmostBlack,
+    onBackground = White,
+
+    // Surface colors
+    surface = DarkGray,
     onSurface = White,
+    surfaceVariant = Color(0xFF2A2A2A),
+    onSurfaceVariant = Color(0xFFCACACA),
+
+    // Error colors
+    error = NeonYellow,
+    onError = AlmostBlack,
+    errorContainer = Color(0xFF524900),
+    onErrorContainer = NeonYellow,
+
+    // Other colors
+    outline = NeonPink.copy(alpha = 0.5f),
+    outlineVariant = NeonBlue.copy(alpha = 0.3f),
+    scrim = AlmostBlack.copy(alpha = 0.3f)
 )
 
+// Define the Typography
+val Typography = Typography(
+    // Title styles
+    displayLarge = TextStyle(
+        fontFamily = FontFamily.Default,
+        fontWeight = FontWeight.Normal,
+        fontSize = 57.sp,
+        lineHeight = 64.sp,
+        letterSpacing = (-0.25).sp
+    ),
+    displayMedium = TextStyle(
+        fontFamily = FontFamily.Default,
+        fontWeight = FontWeight.Normal,
+        fontSize = 45.sp,
+        lineHeight = 52.sp,
+        letterSpacing = 0.sp
+    ),
+    displaySmall = TextStyle(
+        fontFamily = FontFamily.Default,
+        fontWeight = FontWeight.Normal,
+        fontSize = 36.sp,
+        lineHeight = 44.sp,
+        letterSpacing = 0.sp
+    ),
 
+    // Headline styles
+    headlineLarge = TextStyle(
+        fontFamily = FontFamily.Default,
+        fontWeight = FontWeight.Normal,
+        fontSize = 32.sp,
+        lineHeight = 40.sp,
+        letterSpacing = 0.sp
+    ),
+    headlineMedium = TextStyle(
+        fontFamily = FontFamily.Default,
+        fontWeight = FontWeight.Normal,
+        fontSize = 28.sp,
+        lineHeight = 36.sp,
+        letterSpacing = 0.sp
+    ),
+    headlineSmall = TextStyle(
+        fontFamily = FontFamily.Default,
+        fontWeight = FontWeight.Normal,
+        fontSize = 24.sp,
+        lineHeight = 32.sp,
+        letterSpacing = 0.sp
+    ),
+
+    // Title styles
+    titleLarge = TextStyle(
+        fontFamily = FontFamily.Default,
+        fontWeight = FontWeight.Normal,
+        fontSize = 22.sp,
+        lineHeight = 28.sp,
+        letterSpacing = 0.sp
+    ),
+    titleMedium = TextStyle(
+        fontFamily = FontFamily.Default,
+        fontWeight = FontWeight.Medium,
+        fontSize = 16.sp,
+        lineHeight = 24.sp,
+        letterSpacing = 0.15.sp
+    ),
+    titleSmall = TextStyle(
+        fontFamily = FontFamily.Default,
+        fontWeight = FontWeight.Medium,
+        fontSize = 14.sp,
+        lineHeight = 20.sp,
+        letterSpacing = 0.1.sp
+    ),
+
+    // Body styles
+    bodyLarge = TextStyle(
+        fontFamily = FontFamily.Default,
+        fontWeight = FontWeight.Normal,
+        fontSize = 16.sp,
+        lineHeight = 24.sp,
+        letterSpacing = 0.5.sp
+    ),
+    bodyMedium = TextStyle(
+        fontFamily = FontFamily.Default,
+        fontWeight = FontWeight.Normal,
+        fontSize = 14.sp,
+        lineHeight = 20.sp,
+        letterSpacing = 0.25.sp
+    ),
+    bodySmall = TextStyle(
+        fontFamily = FontFamily.Default,
+        fontWeight = FontWeight.Normal,
+        fontSize = 12.sp,
+        lineHeight = 16.sp,
+        letterSpacing = 0.4.sp
+    ),
+
+    // Label styles
+    labelLarge = TextStyle(
+        fontFamily = FontFamily.Default,
+        fontWeight = FontWeight.Medium,
+        fontSize = 14.sp,
+        lineHeight = 20.sp,
+        letterSpacing = 0.1.sp
+    ),
+    labelMedium = TextStyle(
+        fontFamily = FontFamily.Default,
+        fontWeight = FontWeight.Medium,
+        fontSize = 12.sp,
+        lineHeight = 16.sp,
+        letterSpacing = 0.5.sp
+    ),
+    labelSmall = TextStyle(
+        fontFamily = FontFamily.Default,
+        fontWeight = FontWeight.Medium,
+        fontSize = 11.sp,
+        lineHeight = 16.sp,
+        letterSpacing = 0.5.sp
+    )
+)
 
 @Composable
 fun RadioFinderTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
-    }
-
     MaterialTheme(
-        colorScheme = colorScheme,
+        colorScheme = CustomColorScheme,
         typography = Typography,
         content = content
     )
-}
-
-
-@Composable
-fun CircularIconButton(
-    onClick: () -> Unit,
-    icon: @Composable () -> Unit,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true,
-    contentDescription: String? = null
-) {
-    FilledIconButton(
-        onClick = onClick,
-        modifier = modifier
-            .shadow(
-                elevation = 8.dp,
-                shape = CircleShape
-            ),
-        enabled = enabled,
-    ) {
-        icon()
-    }
 }

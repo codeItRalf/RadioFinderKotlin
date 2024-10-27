@@ -7,11 +7,13 @@ import androidx.media3.common.util.Log
 import androidx.media3.common.util.UnstableApi
 import app.codeitralf.radiofinder.data.model.RadioStation
 import app.codeitralf.radiofinder.data.repository.RadioRepository
-import app.codeitralf.radiofinder.services.ServiceConnectionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -19,27 +21,32 @@ import javax.inject.Inject
 class MainViewModel @OptIn(UnstableApi::class)
 @Inject constructor(
     private val radioRepository: RadioRepository,
-    private val serviceConnectionManager: ServiceConnectionManager
 ) : ViewModel() {
 
     private val _stations = MutableStateFlow<List<RadioStation>>(emptyList())
-    val stations = _stations.asStateFlow()
+    private val stations = _stations.asStateFlow()
+
+    val filteredStations = stations.map { list ->
+        list.filter {
+            !it.name.isNullOrBlank() && !it.resolvedUrl.isNullOrBlank()
+        }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading = _isLoading.asStateFlow()
 
-    private val _currentStation = MutableStateFlow<RadioStation?>(null)
-    val currentStation = _currentStation.asStateFlow()
-
-    private val _isPlaying = MutableStateFlow(false)
-    val isPlaying = _isPlaying.asStateFlow()
+    private val _endReached = MutableStateFlow(false)
+    val endReached = _endReached.asStateFlow()
 
     private var searchJob: Job? = null
     private var searchTerm = ""
     private val limit = 30 // Preserved from old ViewModel
 
     init {
-        observePlayerService()
         searchStations("")
     }
 
@@ -49,10 +56,11 @@ class MainViewModel @OptIn(UnstableApi::class)
         searchTerm = query // Save search term for loadNextPage
         searchJob = viewModelScope.launch {
             _isLoading.value = true
+            _endReached.value = false
             try {
                 val result = radioRepository.searchStationsByName(query, limit, 0)
                 _stations.value = result.filter {
-                    !it.name.isNullOrBlank() && !it.resolvedUrl.isNullOrBlank()
+                    _stations.value.contains(it).not()
                 }
             } catch (e: Exception) {
                 Log.e("MainViewModel", "Failed to fetch stations", e)
@@ -64,7 +72,8 @@ class MainViewModel @OptIn(UnstableApi::class)
 
     @OptIn(UnstableApi::class)
     fun loadNextPage() {
-        if (_isLoading.value) return
+        Log.i("MainViewModel", "Loading next page")
+        if (_isLoading.value || endReached.value) return
 
         viewModelScope.launch {
             _isLoading.value = true
@@ -79,7 +88,11 @@ class MainViewModel @OptIn(UnstableApi::class)
                     _stations.value += result.filter {
                         !it.name.isNullOrBlank() && !it.resolvedUrl.isNullOrBlank()
                     }
+                }else{
+                    _endReached.value = true
                 }
+
+
             } catch (e: Exception) {
                 Log.e("MainViewModel", "Failed to load next page", e)
             } finally {
@@ -88,37 +101,6 @@ class MainViewModel @OptIn(UnstableApi::class)
         }
     }
 
-    @OptIn(UnstableApi::class)
-    fun playPause(station: RadioStation?) {
-        serviceConnectionManager.getService()?.playPause(station)
-    }
-
-    @OptIn(UnstableApi::class)
-    private fun observePlayerService() {
-        serviceConnectionManager.bindService { service ->
-            service?.let { playerService ->
-                viewModelScope.launch {
-                    playerService.currentStation.collect { station ->
-                        _currentStation.value = station
-                        station?.let {
-                            try {
-                                radioRepository.clickCounter(it.stationUuid)
-                            } catch (e: Exception) {
-                                Log.e("MainViewModel", "Failed to update click counter", e)
-                            }
-                        }
-                    }
-                }
-
-
-                viewModelScope.launch {
-                    playerService.isPlaying.collect { playing ->
-                        _isPlaying.value = playing
-                    }
-                }
-            }
-        }
-    }
 
     override fun onCleared() {
         super.onCleared()

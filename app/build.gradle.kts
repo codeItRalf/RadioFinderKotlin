@@ -63,9 +63,10 @@ dependencies {
     implementation(libs.androidx.appcompat)
 
     // Compose
-    implementation(libs.bundles.compose)  // This should contain all basic compose dependencies
+    implementation(libs.bundles.compose)
     implementation(libs.compose.material3)
     implementation(libs.compose.ui)
+
 
     // Lifecycle
     implementation(libs.bundles.lifecycle)

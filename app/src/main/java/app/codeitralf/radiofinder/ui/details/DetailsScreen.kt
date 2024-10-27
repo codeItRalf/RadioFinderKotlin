@@ -1,5 +1,6 @@
 package app.codeitralf.radiofinder.ui.details
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,8 +11,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -24,6 +23,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -32,7 +32,9 @@ import androidx.media3.common.util.Log
 import androidx.media3.common.util.UnstableApi
 import app.codeitralf.radiofinder.data.model.RadioStation
 import app.codeitralf.radiofinder.data.model.StationCheck
-import app.codeitralf.radiofinder.ui.composables.sharedVisualizer.SharedVisualizer
+import app.codeitralf.radiofinder.navigation.SharedPlayerViewModel
+import app.codeitralf.radiofinder.ui.composables.RoundedPlayButton
+import app.codeitralf.radiofinder.ui.composables.SharedVisualizer
 import coil.compose.AsyncImage
 
 @ExperimentalMaterial3Api
@@ -42,15 +44,16 @@ fun DetailsScreen(
     station: RadioStation,
     onBackPressed: () -> Unit,
     viewModel: DetailsViewModel = hiltViewModel(),
-    visualizer: SharedVisualizer
-
+    visualizer: SharedVisualizer,
+    sharedPlayerViewModel: SharedPlayerViewModel
 ) {
     val stationChecks by viewModel.stationChecks.collectAsStateWithLifecycle(initialValue = emptyList())
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
-    val currentStation by viewModel.currentStation.collectAsStateWithLifecycle()
-    val isPlaying by viewModel.isPlaying.collectAsStateWithLifecycle()
+    val currentStation by sharedPlayerViewModel.currentStation.collectAsStateWithLifecycle()
+    val isPlaying by sharedPlayerViewModel.isPlaying.collectAsStateWithLifecycle()
+    val playerIsLoading by sharedPlayerViewModel.isLoading.collectAsStateWithLifecycle()
 
-
+    viewModel.getStationCheck(station.stationUuid)
 
     Scaffold(
         topBar = {
@@ -83,7 +86,7 @@ fun DetailsScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
+                .padding(paddingValues).background(Color.Black)
         ) {
             Column(
                 modifier = Modifier
@@ -106,24 +109,15 @@ fun DetailsScreen(
                     modifier = Modifier
                         .align(Alignment.CenterHorizontally)
                 ) {
-                    if (isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(48.dp)
-                        )
-                    } else {
-                        IconButton(
-                            onClick = { viewModel.playPause(station) },
-                            modifier = Modifier.size(48.dp)
-                        ) {
-                            Icon(
-                                if (isPlaying && currentStation?.stationUuid == station.stationUuid)
-                                    Icons.Default.Close
-                                else
-                                    Icons.Default.PlayArrow,
-                                contentDescription = if (isPlaying) "Pause" else "Play"
-                            )
-                        }
-                    }
+
+                    RoundedPlayButton(
+                        onClick = { sharedPlayerViewModel.playPause(station) },
+                        isPlaying =  isPlaying && currentStation?.stationUuid == station.stationUuid,
+                        isLoading = playerIsLoading,
+                        modifier = Modifier.size(70.dp)
+                    )
+
+
                 }
 
                 // Station Details

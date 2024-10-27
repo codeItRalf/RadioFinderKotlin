@@ -37,7 +37,6 @@ media3Exoplayer = "1.4.1"
 coil = "2.5.0"
 
 
-
 # Coroutines
 kotlinxCoroutinesCore = "1.7.3"
 kotlinxCoroutinesAndroid = "1.7.3"
@@ -68,8 +67,12 @@ compose-ui = { module = "androidx.compose.ui:ui" }
 compose-ui-graphics = { module = "androidx.compose.ui:ui-graphics" }
 compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
 compose-material3 = { module = "androidx.compose.material3:material3", version.ref = "material3" }
+compose-material-icons-core = { module = "androidx.compose.material:material-icons-core" }
+compose-material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
+
 compose-activity = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
 compose-navigation = { module = "androidx.navigation:navigation-compose", version.ref = "navigationCompose" }
+
 
 # Architecture Components
 lifecycle-runtime-ktx = { module = "androidx.lifecycle:lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
@@ -125,7 +128,10 @@ compose = [
     "compose-ui-tooling-preview",
     "compose-material3",
     "compose-activity",
-    "compose-navigation"
+    "compose-navigation",
+    "compose-material-icons-core",
+    "compose-material-icons-extended"
+
 ]
 lifecycle = [
     "lifecycle-runtime-ktx",
