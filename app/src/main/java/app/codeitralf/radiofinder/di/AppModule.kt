@@ -1,4 +1,4 @@
-package app.codeitralf.radiofinder.data.di
+package app.codeitralf.radiofinder.di
 
 import android.content.Context
 import androidx.annotation.OptIn

@@ -1,4 +1,4 @@
-package app.codeitralf.radiofinder.ui.main
+package app.codeitralf.radiofinder.ui.feature.main
 
 import androidx.annotation.OptIn
 import androidx.lifecycle.ViewModel

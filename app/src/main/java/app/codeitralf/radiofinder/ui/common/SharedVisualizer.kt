@@ -1,4 +1,4 @@
-package app.codeitralf.radiofinder.ui.composables
+package app.codeitralf.radiofinder.ui.common
 
 import android.util.Log
 import androidx.compose.material3.MaterialTheme
@@ -11,7 +11,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
 import app.codeitralf.radiofinder.data.model.RadioStation
 import app.codeitralf.radiofinder.navigation.SharedPlayerViewModel
-import app.codeitralf.radiofinder.views.exoVisualizer.ExoVisualizer
+import app.codeitralf.radiofinder.ui.common.exoVisualizer.ExoVisualizer
 import javax.inject.Inject
 
 

@@ -46,9 +46,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
 import app.codeitralf.radiofinder.data.model.RadioStation
-import app.codeitralf.radiofinder.ui.composables.RoundedPlayButton
-import app.codeitralf.radiofinder.ui.composables.SharedVisualizer
-import app.codeitralf.radiofinder.ui.main.MainViewModel
+import app.codeitralf.radiofinder.ui.common.RoundedPlayButton
+import app.codeitralf.radiofinder.ui.common.SharedVisualizer
+import app.codeitralf.radiofinder.ui.feature.main.MainViewModel
 import coil.compose.AsyncImage
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged

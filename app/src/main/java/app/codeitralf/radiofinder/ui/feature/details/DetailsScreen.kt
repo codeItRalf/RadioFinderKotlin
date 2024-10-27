@@ -1,4 +1,4 @@
-package app.codeitralf.radiofinder.ui.details
+package app.codeitralf.radiofinder.ui.feature.details
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -20,6 +20,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,8 +34,8 @@ import androidx.media3.common.util.UnstableApi
 import app.codeitralf.radiofinder.data.model.RadioStation
 import app.codeitralf.radiofinder.data.model.StationCheck
 import app.codeitralf.radiofinder.navigation.SharedPlayerViewModel
-import app.codeitralf.radiofinder.ui.composables.RoundedPlayButton
-import app.codeitralf.radiofinder.ui.composables.SharedVisualizer
+import app.codeitralf.radiofinder.ui.common.RoundedPlayButton
+import app.codeitralf.radiofinder.ui.common.SharedVisualizer
 import coil.compose.AsyncImage
 
 @ExperimentalMaterial3Api
@@ -47,13 +48,15 @@ fun DetailsScreen(
     visualizer: SharedVisualizer,
     sharedPlayerViewModel: SharedPlayerViewModel
 ) {
-    val stationChecks by viewModel.stationChecks.collectAsStateWithLifecycle(initialValue = emptyList())
+    val stationChecks by viewModel.stationChecks.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val currentStation by sharedPlayerViewModel.currentStation.collectAsStateWithLifecycle()
     val isPlaying by sharedPlayerViewModel.isPlaying.collectAsStateWithLifecycle()
     val playerIsLoading by sharedPlayerViewModel.isLoading.collectAsStateWithLifecycle()
 
+    LaunchedEffect (station.stationUuid ) {
     viewModel.getStationCheck(station.stationUuid)
+    }
 
     Scaffold(
         topBar = {

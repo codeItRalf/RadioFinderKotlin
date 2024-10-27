@@ -1,4 +1,4 @@
-package app.codeitralf.radiofinder.ui.composables
+package app.codeitralf.radiofinder.ui.common
 
 import RadioFinderTheme
 import androidx.compose.foundation.BorderStroke

@@ -1,9 +1,9 @@
 package app.codeitralf.radiofinder.data.repository
 
 import android.util.Log
-import app.codeitralf.radiofinder.data.di.IoDispatcher
 import app.codeitralf.radiofinder.data.model.RadioStation
 import app.codeitralf.radiofinder.data.model.StationCheck
+import app.codeitralf.radiofinder.di.IoDispatcher
 import app.codeitralf.radiofinder.services.RadioService
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
@@ -49,13 +49,13 @@ class RadioRepository @Inject constructor(
     }
 
     suspend fun getStationCheck(stationUuid: String): List<StationCheck> = withContext(dispatcher) {
+        Log.d("RadioRepository", "getStationCheck: $stationUuid")
         try {
             val queryParams = mapOf(
                 "stationuuid" to stationUuid,
                 "limit" to "1"
             )
             val result = radioService.getStationCheck(queryParams)
-            Log.d("RadioRepository", "getStationCheck: $result")
             result.map { StationCheck.fromJson(it) }
         } catch (e: Exception) {
             e.printStackTrace()

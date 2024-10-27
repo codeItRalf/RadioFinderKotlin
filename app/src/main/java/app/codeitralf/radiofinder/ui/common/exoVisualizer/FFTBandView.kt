@@ -1,4 +1,4 @@
-package app.codeitralf.radiofinder.views.exoVisualizer
+package app.codeitralf.radiofinder.ui.common.exoVisualizer
 
 import android.content.Context
 import android.graphics.Canvas

@@ -9,8 +9,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
 import app.codeitralf.radiofinder.data.model.RadioStation
 import app.codeitralf.radiofinder.navigation.SharedPlayerViewModel
-import app.codeitralf.radiofinder.ui.composables.SharedVisualizer
-import app.codeitralf.radiofinder.ui.main.MainViewModel
+import app.codeitralf.radiofinder.ui.common.SharedVisualizer
+import app.codeitralf.radiofinder.ui.feature.main.MainViewModel
 
 
 @OptIn(UnstableApi::class)

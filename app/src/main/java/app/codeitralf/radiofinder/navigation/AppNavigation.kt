@@ -11,8 +11,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import app.codeitralf.radiofinder.data.model.RadioStation
-import app.codeitralf.radiofinder.ui.composables.SharedVisualizer
-import app.codeitralf.radiofinder.ui.details.DetailsScreen
+import app.codeitralf.radiofinder.ui.common.SharedVisualizer
+import app.codeitralf.radiofinder.ui.feature.details.DetailsScreen
 
 sealed class Screen(val route: String) {
     data object Main : Screen("main")
