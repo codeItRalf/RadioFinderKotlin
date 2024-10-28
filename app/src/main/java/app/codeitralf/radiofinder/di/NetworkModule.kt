@@ -1,7 +1,7 @@
 package app.codeitralf.radiofinder.di
 
+import app.codeitralf.radiofinder.data.api.RadioApi
 import app.codeitralf.radiofinder.network.UserAgentInterceptor
-import app.codeitralf.radiofinder.services.RadioService
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -14,27 +14,24 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
-    @Provides
-    @Singleton
-    fun provideOkHttpClient(): OkHttpClient {
-        return OkHttpClient.Builder()
-            .addInterceptor(UserAgentInterceptor())
-            .build()
-    }
+    private const val BASE_URL = "http://at1.api.radio-browser.info/json/"
 
     @Provides
     @Singleton
-    fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
-        return Retrofit.Builder()
-            .baseUrl("http://at1.api.radio-browser.info/json/")
-            .client(okHttpClient)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-    }
+    fun provideOkHttpClient(): OkHttpClient = OkHttpClient.Builder()
+        .addInterceptor(UserAgentInterceptor())
+        .build()
 
     @Provides
     @Singleton
-    fun provideRadioService(retrofit: Retrofit): RadioService {
-        return retrofit.create(RadioService::class.java)
-    }
+    fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit = Retrofit.Builder()
+        .baseUrl(BASE_URL)
+        .client(okHttpClient)
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
+
+    @Provides
+    @Singleton
+    fun provideRadioApi(retrofit: Retrofit): RadioApi =
+        retrofit.create(RadioApi::class.java)
 }

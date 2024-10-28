@@ -11,12 +11,15 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import app.codeitralf.radiofinder.data.model.RadioStation
-import app.codeitralf.radiofinder.ui.common.SharedVisualizer
+import app.codeitralf.radiofinder.ui.common.exoVisualizer.SharedVisualizer
 import app.codeitralf.radiofinder.ui.feature.details.DetailsScreen
 
-sealed class Screen(val route: String) {
-    data object Main : Screen("main")
-    data object Details : Screen("details/{stationId}") {
+sealed class NavigationRoute(val route: String) {
+    data object Main : NavigationRoute("main")
+    data object Details : NavigationRoute("details/{stationId}") {
+        const val ARG_STATION_ID = "stationId"
+        const val KEY_STATION = "station"
+
         fun createRoute(stationId: String) = "details/$stationId"
     }
 }
@@ -26,21 +29,19 @@ sealed class Screen(val route: String) {
 @Composable
 fun AppNavigation(
     navController: NavHostController,
-    startDestination: String = Screen.Main.route,
+    startDestination: String = NavigationRoute.Main.route,
     sharedPlayerViewModel: SharedPlayerViewModel = hiltViewModel()
 ) {
-
-    val visualizer = SharedVisualizer(sharedPlayerViewModel);
+    val visualizer = SharedVisualizer(sharedPlayerViewModel)
 
     NavHost(
         navController = navController,
         startDestination = startDestination
     ) {
-        composable(Screen.Main.route) {
+        composable(NavigationRoute.Main.route) {
             MainScreen(
                 onNavigateToDetails = { station ->
-                    navController.currentBackStackEntry?.savedStateHandle?.set("station", station)
-                    navController.navigate(Screen.Details.createRoute(station.stationUuid))
+                    navController.navigateToDetails(station)
                 },
                 visualizer = visualizer,
                 sharedPlayerViewModel = sharedPlayerViewModel
@@ -48,12 +49,16 @@ fun AppNavigation(
         }
 
         composable(
-            route = Screen.Details.route,
+            route = NavigationRoute.Details.route,
             arguments = listOf(
-                navArgument("stationId") { type = NavType.StringType }
+                navArgument(NavigationRoute.Details.ARG_STATION_ID) {
+                    type = NavType.StringType
+                }
             )
         ) {
-            val station = navController.previousBackStackEntry?.savedStateHandle?.get<RadioStation>("station")
+            val station = navController.previousBackStackEntry?.
+            savedStateHandle?.get<RadioStation>(NavigationRoute.Details.KEY_STATION)
+
             station?.let {
                 DetailsScreen(
                     station = it,
@@ -64,4 +69,12 @@ fun AppNavigation(
             }
         }
     }
+}
+
+private fun NavHostController.navigateToDetails(station: RadioStation) {
+    currentBackStackEntry?.savedStateHandle?.set(
+        NavigationRoute.Details.KEY_STATION,
+        station
+    )
+    navigate(NavigationRoute.Details.createRoute(station.stationUuid))
 }

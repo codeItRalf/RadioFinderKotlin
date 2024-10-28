@@ -21,41 +21,105 @@ import kotlinx.coroutines.flow.asStateFlow
 @UnstableApi
 class PlayerService : MediaSessionService() {
 
-    // Binder given to clients
-    private val binder = PlayerBinder()
+    companion object {
+        private const val TAG = "PlayerService"
+    }
 
-    // Media session and player
+    // Service state
+    private val binder = PlayerBinder()
     private var mediaSession: MediaSession? = null
     private lateinit var exoPlayer: ExoPlayer
-
-    // Notification manager
     private lateinit var playerNotificationManagerWrapper: PlayerNotificationManagerWrapper
+    private val fftAudioProcessor = FFTAudioProcessor()
 
-    // LiveData for current station, loading and playing state
+    // State flows
     private val _currentStation = MutableStateFlow<RadioStation?>(null)
-    val currentStation: StateFlow<RadioStation?>  = _currentStation.asStateFlow()
+    val currentStation: StateFlow<RadioStation?> = _currentStation.asStateFlow()
 
-    private val _isLoading = MutableStateFlow<Boolean>(value = false)
-    val isLoading: StateFlow<Boolean>  =  _isLoading.asStateFlow()
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
-    private val _isPlaying = MutableStateFlow<Boolean>(false)
-    val isPlaying: StateFlow<Boolean>  = _isPlaying.asStateFlow()
-
-    // Audio processor for visualization
-    private val _fftAudioProcessor = FFTAudioProcessor()
+    private val _isPlaying = MutableStateFlow(false)
+    val isPlaying: StateFlow<Boolean> = _isPlaying.asStateFlow()
 
     override fun onCreate() {
         super.onCreate()
         initializePlayer()
-        playerNotificationManagerWrapper = PlayerNotificationManagerWrapper(
-            this,
-            exoPlayer,
-            { _currentStation.value },
-            { stopMedia() }
-        )
-
+        initializeNotificationManager()
     }
 
+    private fun initializePlayer() {
+        PlayerInitializer.initializePlayer(
+            context = this,
+            service = this,
+            currentStation = { _currentStation.value }
+        ) { exoPlayer, mediaSession ->
+            this.exoPlayer = exoPlayer
+            this.mediaSession = mediaSession
+        }
+    }
+
+    private fun initializeNotificationManager() {
+        playerNotificationManagerWrapper = PlayerNotificationManagerWrapper(
+            context = this,
+            exoPlayer = exoPlayer,
+            getCurrentStation = { _currentStation.value },
+            stopMedia = { stopMedia() }
+        )
+    }
+
+    fun createPlayerListener() = object : Player.Listener {
+        override fun onIsPlayingChanged(isPlaying: Boolean) {
+            _isPlaying.value = isPlaying
+        }
+
+        override fun onPlaybackStateChanged(playbackState: Int) {
+            _isLoading.value = playbackState == Player.STATE_BUFFERING
+        }
+    }
+
+    fun playPause(station: RadioStation?) {
+        when {
+            station == null || station == _currentStation.value -> togglePlayback()
+            else -> playNewStation(station)
+        }
+    }
+
+    private fun togglePlayback() {
+        if (_isPlaying.value) exoPlayer.pause() else exoPlayer.play()
+    }
+
+    private fun playNewStation(station: RadioStation) {
+        _currentStation.value = station
+        try {
+            station.resolvedUrl?.let { url ->
+                exoPlayer.setMediaItem(MediaItem.fromUri(url))
+                exoPlayer.prepare()
+                exoPlayer.play()
+            }
+        } catch (e: Exception) {
+            handlePlaybackError(e)
+        }
+    }
+
+    private fun handlePlaybackError(error: Exception) {
+        Log.e(TAG, "Error playing station", error)
+        stopMedia()
+        Toast.makeText(this, error.message, Toast.LENGTH_SHORT).show()
+    }
+
+    fun stopMedia() {
+        exoPlayer.stop()
+        if (playerNotificationManagerWrapper.isInForeground) {
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            playerNotificationManagerWrapper.isInForeground = false
+        }
+        _currentStation.value = null
+    }
+
+    fun getAudioProcessor(): FFTAudioProcessor = fftAudioProcessor
+
+    // Service lifecycle methods
     override fun onBind(intent: Intent?): IBinder {
         super.onBind(intent)
         return binder
@@ -63,13 +127,17 @@ class PlayerService : MediaSessionService() {
 
     override fun onTaskRemoved(rootIntent: Intent?) {
         mediaSession?.player?.let { player ->
-            if (!player.playWhenReady || player.mediaItemCount == 0 || player.playbackState == Player.STATE_ENDED) {
+            if (!player.playWhenReady ||
+                player.mediaItemCount == 0 ||
+                player.playbackState == Player.STATE_ENDED
+            ) {
                 stopSelf()
             }
         }
     }
 
-    override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = mediaSession
+    override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? =
+        mediaSession
 
     override fun onDestroy() {
         mediaSession?.run {
@@ -81,76 +149,8 @@ class PlayerService : MediaSessionService() {
         super.onDestroy()
     }
 
-    private fun initializePlayer() {
-        PlayerInitializer.initializePlayer(this, this, { _currentStation.value }) { exoPlayer, mediaSession ->
-            this.exoPlayer = exoPlayer
-            this.mediaSession = mediaSession
-        }
-    }
-
-    fun createPlayerListener(): Player.Listener {
-        return object : Player.Listener {
-            override fun onIsPlayingChanged(isPlaying: Boolean) {
-                _isPlaying.value = isPlaying
-            }
-
-            override fun onPlaybackStateChanged(playbackState: Int) {
-                _isLoading.value = playbackState == Player.STATE_BUFFERING
-            }
-        }
-    }
-
-    fun playPause(station: RadioStation?) {
-        if (station == null || station == _currentStation.value) {
-            if (_isPlaying.value) {
-                exoPlayer.pause()
-            } else {
-                exoPlayer.play()
-            }
-        } else {
-            playNewStation(station)
-        }
-    }
-
-    private fun playNewStation(station: RadioStation) {
-        _currentStation.value = station
-        try {
-            val mediaItem = MediaItem.fromUri(station.resolvedUrl!!)
-            exoPlayer.setMediaItem(mediaItem)
-            exoPlayer.prepare()
-            exoPlayer.play()
-        } catch (e: Exception) {
-            Log.e("PlayerService", "Error playing station", e)
-            stopMedia()
-            Toast.makeText(this, e.message, Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    fun stopMedia() {
-        exoPlayer.stop()
-        if(playerNotificationManagerWrapper.isInForeground){
-            stopForeground(STOP_FOREGROUND_REMOVE)
-            playerNotificationManagerWrapper.isInForeground = false
-        }
-        _currentStation.value = null
-    }
-
-    fun isPlaying(): Boolean {
-        return exoPlayer.isPlaying
-    }
-
-    // Binder class to return the service instance to clients
     inner class PlayerBinder : Binder() {
         val service: PlayerService
             get() = this@PlayerService
-    }
-
-    // Accessor methods for LiveData
-    fun getStation(): RadioStation? {
-        return _currentStation.value
-    }
-
-    fun getAudioProcessor(): FFTAudioProcessor {
-        return _fftAudioProcessor
     }
 }

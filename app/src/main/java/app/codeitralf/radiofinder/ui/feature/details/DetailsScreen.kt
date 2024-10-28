@@ -35,7 +35,7 @@ import app.codeitralf.radiofinder.data.model.RadioStation
 import app.codeitralf.radiofinder.data.model.StationCheck
 import app.codeitralf.radiofinder.navigation.SharedPlayerViewModel
 import app.codeitralf.radiofinder.ui.common.RoundedPlayButton
-import app.codeitralf.radiofinder.ui.common.SharedVisualizer
+import app.codeitralf.radiofinder.ui.common.exoVisualizer.SharedVisualizer
 import coil.compose.AsyncImage
 
 @ExperimentalMaterial3Api
@@ -50,9 +50,12 @@ fun DetailsScreen(
 ) {
     val stationChecks by viewModel.stationChecks.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
-    val currentStation by sharedPlayerViewModel.currentStation.collectAsStateWithLifecycle()
-    val isPlaying by sharedPlayerViewModel.isPlaying.collectAsStateWithLifecycle()
-    val playerIsLoading by sharedPlayerViewModel.isLoading.collectAsStateWithLifecycle()
+
+    val playerState by sharedPlayerViewModel.playerState.collectAsStateWithLifecycle()
+    val currentStation = playerState.currentStation
+    val isPlaying = playerState.isPlaying
+    val playerIsLoading = playerState.isLoading
+
 
     LaunchedEffect (station.stationUuid ) {
     viewModel.getStationCheck(station.stationUuid)

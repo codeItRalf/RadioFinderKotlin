@@ -9,59 +9,91 @@ import app.codeitralf.radiofinder.services.FFTAudioProcessor
 
 @UnstableApi
 class ExoVisualizer @JvmOverloads constructor(
-    context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
+    context: Context,
+    attrs: AttributeSet? = null,
+    defStyleAttr: Int = 0
 ) : FrameLayout(context, attrs, defStyleAttr), FFTAudioProcessor.FFTListener {
 
-    var processor: FFTAudioProcessor? = null
-        set(value) {
-            Log.d("ExoVisualizer", "Setting processor: ${value != null}")
-            if (field != value) {
-                field = value
-                applyListenerState()
-            }
-        }
+    companion object {
+        private const val TAG = "ExoVisualizer"
+    }
+
+    private val bandView = FFTBandView(context, attrs).apply {
+        layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
+    }
 
     private var isListenerEnabled = false
         set(value) {
             if (field != value) {
                 field = value
-                applyListenerState()
+                updateListener()
             }
         }
 
-    private val bandView = FFTBandView(context, attrs)
+    var processor: FFTAudioProcessor? = null
+        set(value) {
+            logDebug("Setting processor: ${value != null}")
+            if (field != value) {
+                field = value
+                updateListener()
+            }
+        }
 
     init {
-        addView(bandView, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
-    }
-
-    private fun applyListenerState() {
-        Log.d("ExoVisualizer", "Applying listener state: enabled=$isListenerEnabled, hasProcessor=${processor != null}")
-        if (isListenerEnabled && processor?.listener != this) {
-            processor?.listener = this
-            Log.d("ExoVisualizer", "Listener set")
-        } else if (!isListenerEnabled && processor?.listener == this) {
-            processor?.listener = null
-            Log.d("ExoVisualizer", "Listener removed")
-        }
-    }
-
-    fun updateProcessorListenerState(enable: Boolean) {
-        Log.d("ExoVisualizer", "Updating listener state to: $enable, processor: ${processor != null}")
-        isListenerEnabled = enable
+        addView(bandView)
     }
 
     override fun onFFTReady(sampleRateHz: Int, channelCount: Int, fft: FloatArray) {
-        if (!isListenerEnabled) return
-        bandView.onFFT(fft)
+        if (isListenerEnabled) {
+            bandView.onFFT(fft)
+        }
     }
 
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
-        Log.d("ExoVisualizer", "Detached from window")
+        logDebug("Detached from window")
+        disableListener()
     }
 
-    fun setColor(fillColor: Int, bandsColor: Int, avgColor: Int, pathColor: Int) {
-        bandView.setColor(fillColor, bandsColor, avgColor, pathColor)
+    fun updateProcessorListenerState(enable: Boolean) {
+        logDebug("Updating listener state to: $enable, processor: ${processor != null}")
+        isListenerEnabled = enable
+    }
+
+    fun setColor(
+        fillColor: Int,
+        bandsColor: Int,
+        avgColor: Int,
+        pathColor: Int
+    ) {
+        bandView.setColor(
+            fillColor = fillColor,
+            bandsColor = bandsColor,
+            avgColor = avgColor,
+            pathColor = pathColor
+        )
+    }
+
+    private fun updateListener() {
+        logDebug("Updating listener: enabled=$isListenerEnabled, hasProcessor=${processor != null}")
+
+        processor?.let { proc ->
+            if (isListenerEnabled && proc.listener != this) {
+                proc.listener = this
+                logDebug("Listener enabled")
+            } else if (!isListenerEnabled && proc.listener == this) {
+                proc.listener = null
+                logDebug("Listener disabled")
+            }
+        }
+    }
+
+    private fun disableListener() {
+        isListenerEnabled = false
+        processor?.listener = null
+    }
+
+    private fun logDebug(message: String) {
+        Log.d(TAG, message)
     }
 }

@@ -1,10 +1,12 @@
 package app.codeitralf.radiofinder.data.repository
 
 import android.util.Log
+import app.codeitralf.radiofinder.data.api.RadioApi
+import app.codeitralf.radiofinder.data.api.request.SearchStationsRequest
+import app.codeitralf.radiofinder.data.api.request.StationCheckRequest
 import app.codeitralf.radiofinder.data.model.RadioStation
 import app.codeitralf.radiofinder.data.model.StationCheck
 import app.codeitralf.radiofinder.di.IoDispatcher
-import app.codeitralf.radiofinder.services.RadioService
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -12,53 +14,42 @@ import javax.inject.Singleton
 
 @Singleton
 class RadioRepository @Inject constructor(
-    private val radioService: RadioService,
+    private val radioApi: RadioApi,
     @IoDispatcher private val dispatcher: CoroutineDispatcher
 ) {
-    // Rest of the repository implementation remains the same
     suspend fun searchStationsByName(
         searchTerm: String,
         limit: Int,
         offset: Int
     ): List<RadioStation> = withContext(dispatcher) {
         try {
-            val queryParams = mapOf(
-                "name" to searchTerm,
-                "limit" to limit.toString(),
-                "offset" to offset.toString(),
-                "hidebroken" to "true"
+            val request = SearchStationsRequest(
+                name = searchTerm,
+                limit = limit,
+                offset = offset
             )
-            radioService.searchByName(queryParams)
-                .map { RadioStation.fromJson(it) }
+            radioApi.searchByName(request).map { it.toRadioStation() }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("RadioRepository", "Search failed: ${e.message}")
             throw e
         }
     }
 
-
     suspend fun clickCounter(stationUuid: String): Boolean = withContext(dispatcher) {
         try {
-            val response = radioService.clickCounter(stationUuid)
-            response["ok"] as? Boolean ?: false
+            radioApi.clickCounter(stationUuid).success
         } catch (e: Exception) {
-            Log.d("RadioRepository", "Click counter failed", e)
-            e.printStackTrace()
+            Log.e("RadioRepository", "Click counter failed: ${e.message}")
             false
         }
     }
 
     suspend fun getStationCheck(stationUuid: String): List<StationCheck> = withContext(dispatcher) {
-        Log.d("RadioRepository", "getStationCheck: $stationUuid")
         try {
-            val queryParams = mapOf(
-                "stationuuid" to stationUuid,
-                "limit" to "1"
-            )
-            val result = radioService.getStationCheck(queryParams)
-            result.map { StationCheck.fromJson(it) }
+            val request = StationCheckRequest(stationuuid = stationUuid)
+            radioApi.getStationCheck(request).map { it.toStationCheck() }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("RadioRepository", "Station check failed: ${e.message}")
             throw e
         }
     }

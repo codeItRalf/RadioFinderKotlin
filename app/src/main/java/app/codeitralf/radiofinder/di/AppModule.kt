@@ -14,29 +14,19 @@ import kotlinx.coroutines.Dispatchers
 import javax.inject.Qualifier
 import javax.inject.Singleton
 
-@Qualifier
-@Retention(AnnotationRetention.BINARY)
-annotation class IoDispatcher
-
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
+
     @OptIn(UnstableApi::class)
     @Provides
     @Singleton
     fun provideServiceConnectionManager(
         @ApplicationContext context: Context
-    ): ServiceConnectionManager {
-        return ServiceConnectionManager(context)
-    }
+    ): ServiceConnectionManager = ServiceConnectionManager(context)
 
-    @IoDispatcher
     @Provides
     @Singleton
-    fun provideIoDispatcher(): CoroutineDispatcher {
-        return Dispatchers.IO
-    }
-
-    // Network related providers can stay in NetworkModule or be moved here if you prefer
-    // I recommend keeping them in NetworkModule for better organization
+    @IoDispatcher
+    fun provideIoDispatcher(): CoroutineDispatcher = Dispatchers.IO
 }

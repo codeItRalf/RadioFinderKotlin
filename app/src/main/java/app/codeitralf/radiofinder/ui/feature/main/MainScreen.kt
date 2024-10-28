@@ -9,8 +9,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
 import app.codeitralf.radiofinder.data.model.RadioStation
 import app.codeitralf.radiofinder.navigation.SharedPlayerViewModel
-import app.codeitralf.radiofinder.ui.common.SharedVisualizer
+import app.codeitralf.radiofinder.ui.common.exoVisualizer.SharedVisualizer
 import app.codeitralf.radiofinder.ui.feature.main.MainViewModel
+import app.codeitralf.radiofinder.ui.feature.main.components.FloatingPlayerController
+import app.codeitralf.radiofinder.ui.feature.main.components.RadioAppBar
 
 
 @OptIn(UnstableApi::class)
@@ -21,9 +23,11 @@ fun MainScreen(
     visualizer: SharedVisualizer,
     sharedPlayerViewModel: SharedPlayerViewModel
 ) {
-    val currentStation by sharedPlayerViewModel.currentStation.collectAsStateWithLifecycle()
-    val isPlaying by sharedPlayerViewModel.isPlaying.collectAsStateWithLifecycle()
-    val playerIsLoading by sharedPlayerViewModel.isLoading.collectAsStateWithLifecycle()
+    val playerState by sharedPlayerViewModel.playerState.collectAsStateWithLifecycle()
+    val currentStation = playerState.currentStation
+    val isPlaying = playerState.isPlaying
+    val playerIsLoading = playerState.isLoading
+
 
     Scaffold(
         topBar = {
@@ -36,7 +40,7 @@ fun MainScreen(
                 FloatingPlayerController(
                     station = currentStation,
                     onPlayPauseClick = sharedPlayerViewModel::playPause,
-                    onControllerClick = { currentStation?.let(onNavigateToDetails) },
+                    onControllerClick = { currentStation.let(onNavigateToDetails) },
                     visualizer = visualizer,
                     isPlaying = isPlaying,
                     isLoading = playerIsLoading
@@ -44,13 +48,14 @@ fun MainScreen(
             }
         }
     ) { paddingValues ->
-        MainContent(
+        MainBody(
             modifier = Modifier.padding(paddingValues),
             isPlayerLoading = playerIsLoading,
             currentStation = currentStation,
             onStationClick = sharedPlayerViewModel::playPause,
             onStationDetailsClick = onNavigateToDetails,
-            viewModel = viewModel
+            viewModel = viewModel,
+            isPlaying = isPlaying
         )
     }
 }

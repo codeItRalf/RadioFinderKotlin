@@ -1,4 +1,4 @@
-package app.codeitralf.radiofinder.ui.common
+package app.codeitralf.radiofinder.ui.common.exoVisualizer
 
 import android.util.Log
 import androidx.compose.material3.MaterialTheme
@@ -11,7 +11,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
 import app.codeitralf.radiofinder.data.model.RadioStation
 import app.codeitralf.radiofinder.navigation.SharedPlayerViewModel
-import app.codeitralf.radiofinder.ui.common.exoVisualizer.ExoVisualizer
 import javax.inject.Inject
 
 
@@ -26,9 +25,10 @@ class SharedVisualizer @Inject constructor(
         modifier: Modifier = Modifier,
         targetStation: RadioStation?,
     ) {
-        val currentStation by viewModel.currentStation.collectAsStateWithLifecycle()
-        val isPlaying by viewModel.isPlaying.collectAsStateWithLifecycle()
-        val processor by viewModel.processor.collectAsStateWithLifecycle()
+        val playerState by viewModel.playerState.collectAsStateWithLifecycle()
+        val currentStation = playerState.currentStation
+        val isPlaying = playerState.isPlaying
+        val processor = playerState.processor
 
         // Capture colors from the theme
         val surfaceColor = MaterialTheme.colorScheme.surface.toArgb()

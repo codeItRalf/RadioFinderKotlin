@@ -1,6 +1,5 @@
 package app.codeitralf.radiofinder.navigation
 
-import androidx.annotation.OptIn
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.util.Log
@@ -18,71 +17,78 @@ import javax.inject.Inject
 
 @UnstableApi
 @HiltViewModel
-class SharedPlayerViewModel
-@Inject constructor(
+class SharedPlayerViewModel @Inject constructor(
     private val serviceConnectionManager: ServiceConnectionManager,
     private val radioRepository: RadioRepository
 ) : ViewModel() {
 
+    data class PlayerState(
+        val currentStation: RadioStation? = null,
+        val isPlaying: Boolean = false,
+        val isLoading: Boolean = false,
+        val processor: FFTAudioProcessor? = null
+    )
 
-    private val _currentStation = MutableStateFlow<RadioStation?>(null)
-    val currentStation: StateFlow<RadioStation?> = _currentStation.asStateFlow()
-
-    private val _isPlaying = MutableStateFlow(false)
-    val isPlaying: StateFlow<Boolean> = _isPlaying.asStateFlow()
-
-    private val _isLoading = MutableStateFlow(false)
-    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
-
-    // Visualizer State
-    private val _processor = MutableStateFlow<FFTAudioProcessor?>(null)
-    val processor: StateFlow<FFTAudioProcessor?> = _processor.asStateFlow()
+    private val _playerState = MutableStateFlow(PlayerState())
+    val playerState: StateFlow<PlayerState> = _playerState.asStateFlow()
 
     init {
-        observePlayerService()
+        initializePlayerService()
     }
 
-    @OptIn(UnstableApi::class)
-    private fun observePlayerService() {
+    private fun initializePlayerService() {
         serviceConnectionManager.bindService { service ->
             service?.let { playerService ->
-                _processor.value = playerService.getAudioProcessor()
+                // Set audio processor
+                updatePlayerState {
+                    it.copy(processor = playerService.getAudioProcessor())
+                }
 
+                // Observe station changes
                 viewModelScope.launch {
                     playerService.currentStation.collect { station ->
-                        _currentStation.value = station
-                        station?.let {
-                            try {
-                                radioRepository.clickCounter(it.stationUuid)
-                            } catch (e: Exception) {
-                                Log.e("MainViewModel", "Failed to update click counter", e)
-                            }
-                        }
+                        updatePlayerState { it.copy(currentStation = station) }
+                        updateClickCounter(station)
                     }
                 }
 
+                // Observe loading state
                 viewModelScope.launch {
                     playerService.isLoading.collect { loading ->
-                        _isLoading.value = loading
+                        updatePlayerState { it.copy(isLoading = loading) }
                     }
                 }
 
+                // Observe playing state
                 viewModelScope.launch {
                     playerService.isPlaying.collect { playing ->
-                        _isPlaying.value = playing
+                        updatePlayerState { it.copy(isPlaying = playing) }
                     }
                 }
             }
         }
     }
 
+    private fun updatePlayerState(update: (PlayerState) -> PlayerState) {
+        _playerState.value = update(_playerState.value)
+    }
 
+    private suspend fun updateClickCounter(station: RadioStation?) {
+        station?.let {
+            try {
+                radioRepository.clickCounter(it.stationUuid)
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to update click counter", e)
+            }
+        }
+    }
 
-    @OptIn(UnstableApi::class)
     fun playPause(station: RadioStation?) {
         serviceConnectionManager.getService()?.playPause(station)
     }
 
-
+    companion object {
+        private const val TAG = "SharedPlayerViewModel"
+    }
 }
 

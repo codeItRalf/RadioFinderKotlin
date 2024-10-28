@@ -1,8 +1,10 @@
 package app.codeitralf.radiofinder.services
+
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
+import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import androidx.media3.common.util.UnstableApi
@@ -10,74 +12,88 @@ import androidx.media3.common.util.UnstableApi
 @UnstableApi
 class ServiceConnectionManager(private val context: Context) {
 
+    companion object {
+        private const val TAG = "ServiceConnectionManager"
+    }
+
     private var playerService: PlayerService? = null
     private var isBound = false
-    private val callbacks = mutableListOf<(PlayerService?) -> Unit>()
+    private val serviceCallbacks = mutableListOf<ServiceCallback>()
 
-    private val connection = object : ServiceConnection {
+    private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(className: ComponentName, service: IBinder) {
-            Log.d("ServiceConnectionManager", "Service Connected")
-            val binder = service as PlayerService.PlayerBinder
-            playerService = binder.service
+            Log.d(TAG, "Service Connected")
+            playerService = (service as PlayerService.PlayerBinder).service
             isBound = true
-            // Notify all registered callbacks
-            callbacks.forEach { callback ->
-                callback(playerService)
-            }
+            notifyCallbacks()
         }
 
-        override fun onServiceDisconnected(arg0: ComponentName) {
-            Log.d("ServiceConnectionManager", "Service Disconnected")
+        override fun onServiceDisconnected(className: ComponentName) {
+            Log.d(TAG, "Service Disconnected")
             isBound = false
             playerService = null
-            callbacks.clear()
+            clearCallbacks()
         }
     }
 
-    fun bindService(onServiceConnectedCallback: (PlayerService?) -> Unit) {
-        Log.d("ServiceConnectionManager", "Binding service, isBound=$isBound")
+    fun bindService(onServiceConnected: ServiceCallback) {
+        Log.d(TAG, "Binding service, isBound=$isBound")
 
-        // Add callback to the list
-        if (!callbacks.contains(onServiceConnectedCallback)) {
-            callbacks.add(onServiceConnectedCallback)
+        if (!serviceCallbacks.contains(onServiceConnected)) {
+            serviceCallbacks.add(onServiceConnected)
         }
 
-        // If already bound, call callback immediately
         if (isBound && playerService != null) {
-            Log.d("ServiceConnectionManager", "Service already bound, calling callback immediately")
-            onServiceConnectedCallback(playerService)
+            Log.d(TAG, "Service already bound, calling callback immediately")
+            onServiceConnected(playerService)
             return
         }
 
-        try {
-            Intent(context, PlayerService::class.java).also { intent ->
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                    context.startForegroundService(intent)
-                } else {
-                    context.startService(intent)
-                }
-                context.bindService(intent, connection, Context.BIND_AUTO_CREATE)
-            }
-        } catch (e: Exception) {
-            Log.e("ServiceConnectionManager", "Error binding service", e)
-        }
+        startAndBindService()
     }
 
     fun unbindService() {
         if (isBound) {
             try {
-                context.unbindService(connection)
-                callbacks.clear()
-                isBound = false
-                playerService = null
+                context.unbindService(serviceConnection)
+                clearCallbacks()
             } catch (e: Exception) {
-                Log.e("ServiceConnectionManager", "Error unbinding service", e)
+                Log.e(TAG, "Error unbinding service", e)
             }
         }
     }
 
-    fun getService(): PlayerService? {
-        return playerService
+    fun getService(): PlayerService? = playerService
+
+    private fun startAndBindService() {
+        try {
+            Intent(context, PlayerService::class.java).also { intent ->
+                startServiceBasedOnAndroidVersion(intent)
+                context.bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error binding service", e)
+        }
     }
 
+    private fun startServiceBasedOnAndroidVersion(intent: Intent) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            context.startForegroundService(intent)
+        } else {
+            context.startService(intent)
+        }
+    }
+
+    private fun notifyCallbacks() {
+        serviceCallbacks.forEach { it(playerService) }
+    }
+
+    private fun clearCallbacks() {
+        serviceCallbacks.clear()
+        isBound = false
+        playerService = null
+    }
 }
+
+// Type alias for service callback
+private typealias ServiceCallback = (PlayerService?) -> Unit
